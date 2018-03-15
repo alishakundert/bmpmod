@@ -24,10 +24,13 @@ import emcee
 import corner
 
 
-import massmod_func as massmod
-import massmod_params as params
-import massmod_uconv as uconv
 
+import massmod.massmod_func as massmod
+from massmod.set_prof_data import set_ne, set_tspec
+
+
+import defaultparams.uconv as uconv
+import defaultparams.cosmology as cosmo
 
 
 
@@ -35,6 +38,21 @@ if __name__ == '__main__':
 
     obsID='4964'
 
+    
+    FGdat=atpy.Table.read('../FG_sample.txt',format='ascii') 
+    ind=np.where(FGdat['obsID']==int(obsID))[0][0]
+
+    #IMPORTANT: read in values for re and sersic_n also
+    cluster = {}
+    cluster['name'] = obsID
+    cluster['z'] = FGdat['z'][ind]
+    cluster['bcg_re'] = 11.82
+    cluster['bcg_sersic_n'] = 2.7
+    cluster['refindex'] = -2
+
+    #set up cosmology
+    astropycosmo=FlatLambdaCDM(H0=70. * u.km/u.s/u.Mpc,Om0=0.3)
+    skyscale=astropycosmo.kpc_proper_per_arcmin(cluster['z'])/60. *u.arcmin/u.kpc #[kpc/arcsec]
 
     dirpath='/usr/data/castaway/kundert/obs/'+str(obsID)+'/annuli'
 
@@ -57,14 +75,14 @@ if __name__ == '__main__':
     rout_arcsec=np.array(dat['rout_arcsec'])
     rpos_arcsec=(((rout_arcsec**(3./2.))+(rin_arcsec**(3./2.)))/2.)**(2./3.)
 
-    r_pos=np.array(rpos_arcsec)*params.kpc_arcsec #[kpc]
-    rin_kpc=rin_arcsec*params.kpc_arcsec #[kpc]
-    rout_kpc=rout_arcsec*params.kpc_arcsec #[kpc]
+    r_pos=np.array(rpos_arcsec)*skyscale #[kpc]
+    rin_kpc=rin_arcsec*skyscale #[kpc]
+    rout_kpc=rout_arcsec*skyscale #[kpc]
 
 
     #compute errors on position  values       
-    xerr_pos_l=np.array(rpos_arcsec-rin_arcsec)*params.kpc_arcsec #[kpc]  
-    xerr_pos_u=np.array(rout_arcsec-rpos_arcsec)*params.kpc_arcsec #[kpc]  
+    xerr_pos_l=np.array(rpos_arcsec-rin_arcsec)*skyscale #[kpc]  
+    xerr_pos_u=np.array(rout_arcsec-rpos_arcsec)*skyscale #[kpc]  
 
     xerr_pos_l[0]=0.999*xerr_pos_l[0] #small change so loglog can be plotted
 
@@ -101,8 +119,7 @@ if __name__ == '__main__':
     norm_eu=np.array(dat['src_norm_eu'])
 
 
-    cosmo=FlatLambdaCDM(H0=70. * u.km/u.s/u.Mpc,Om0=0.3)
-    da_mpc=cosmo.angular_diameter_distance(params.z) /u.Mpc
+    da_mpc=astropycosmo.angular_diameter_distance(cluster['z']) /u.Mpc
     da_cm=da_mpc*(3.085677581e+24) #angular diameter distance [cm]
 
 
@@ -121,9 +138,9 @@ if __name__ == '__main__':
     '''
 
 
-    ne_spec=np.sqrt(norm*4.*np.pi*((da_cm*(1.+params.z))**2.)*(10**14.)*(params.ne_over_np/dv_cm))
-    ne_spec_el=np.sqrt(norm_el*4.*np.pi*((da_cm*(1.+params.z))**2.)*(10**14.)*(params.ne_over_np/dv_cm))
-    ne_spec_eu=np.sqrt(norm_eu*4.*np.pi*((da_cm*(1.+params.z))**2.)*(10**14.)*(params.ne_over_np/dv_cm))
+    ne_spec=np.sqrt(norm*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)*(10**14.)*(cosmo.ne_over_np/dv_cm))
+    ne_spec_el=np.sqrt(norm_el*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)*(10**14.)*(cosmo.ne_over_np/dv_cm))
+    ne_spec_eu=np.sqrt(norm_eu*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)*(10**14.)*(cosmo.ne_over_np/dv_cm))
     #ne_err=np.sqrt((ne_el**2.)+(ne_eu**2.)) HOW ARE ERRORS COMBINED?
     ne_spec_err=(np.abs(ne_spec_el)+np.abs(ne_spec_eu))/2.
 
@@ -145,13 +162,13 @@ if __name__ == '__main__':
         pdat['conv'][binind]=conv
 
 
-    ne_sb=np.sqrt(((np.array(pdat['DEPR']))/pdat['conv'])*params.ne_over_np*4.*np.pi*((da_cm*(1.+params.z))**2.)*(10**14.)*(uconv.kpc_cm**-3.))
-    ne_sb_err=0.5*np.array(pdat['ERR_DEPR'])*(np.array(pdat['DEPR'])**-0.5)*np.sqrt((1./pdat['conv'])*params.ne_over_np*4.*np.pi*((da_cm*(1.+params.z))**2.)*(10**14.)*(uconv.kpc_cm**-3.)) #simple uncertaintity propagation > write out if you get confused later
+    ne_sb=np.sqrt(((np.array(pdat['DEPR']))/pdat['conv'])*cosmo.ne_over_np*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)*(10**14.)*(uconv.kpc_cm**-3.))
+    ne_sb_err=0.5*np.array(pdat['ERR_DEPR'])*(np.array(pdat['DEPR'])**-0.5)*np.sqrt((1./pdat['conv'])*cosmo.ne_over_np*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)*(10**14.)*(uconv.kpc_cm**-3.)) #simple uncertaintity propagation > write out if you get confused later
 
     pdat.add_column(astropy.table.Column(ne_sb_err,name='ERR_NE'))
 
-    pdat['RADIUS']=np.array(pdat['RADIUS'])*params.kpc_arcsec #[kpc]
-    pdat['WIDTH']=np.array(pdat['WIDTH'])*params.kpc_arcsec #[kpc]
+    pdat['RADIUS']=np.array(pdat['RADIUS'])*skyscale #[kpc]
+    pdat['WIDTH']=np.array(pdat['WIDTH'])*skyscale #[kpc]
 
     #pdat.add_column(astropy.table.Column(ne_sb,name='NE'))
     #pdat.add_column(astropy.table.Column(ne_sb_err,name='ERR_NE'))
@@ -185,21 +202,25 @@ if __name__ == '__main__':
     '''
     set up data arrays
     '''
-    ne_data=atpy.Table()
-    ne_data.add_column(Column(pdat['RADIUS'],'radius'))
-    ne_data.add_column(Column(pdat['DENSITY'],'ne'))
-    ne_data.add_column(Column(pdat['ERR_DENS'],'ne_err'))
-    ne_data.add_column(Column(pdat['WIDTH'],'radius_lowerbound'))
-    ne_data.add_column(Column(pdat['WIDTH'],'radius_upperbound'))
 
-    tspec_data=atpy.Table()
-    tspec_data.add_column(Column(r_pos,'radius'))
-    tspec_data.add_column(Column(dat['src_kT'],'tspec'))
-    tspec_data.add_column(Column(tspec_err,'tspec_err'))
-    tspec_data.add_column(Column(-tspec_el,'tspec_lowerbound'))
-    tspec_data.add_column(Column(tspec_eu,'tspec_upperbound'))
-    tspec_data.add_column(Column(xerr_pos_l,'radius_lowerbound'))
-    tspec_data.add_column(Column(xerr_pos_u,'radius_upperbound'))
+
+    ne_data=set_ne(
+        radius=pdat['RADIUS'],
+        ne=pdat['DENSITY'],
+        ne_err=pdat['ERR_DENS'],
+        radius_lowerbound=pdat['WIDTH'],
+        radius_upperbound=pdat['WIDTH'])
+
+
+    tspec_data=set_tspec(
+        radius=r_pos,
+        tspec=dat['src_kT'],
+        tspec_err=tspec_err,
+        tspec_lowerbound=tspec_el,
+        tspec_upperbound=tspec_eu,
+        radius_lowerbound=xerr_pos_l,
+        radius_upperbound=xerr_pos_u)
+
     
 
 
@@ -208,13 +229,18 @@ if __name__ == '__main__':
     '''
     
     #need to generalize this a lot to remove double betamodel 
-    nemodel=massmod.fitne(ne_data,tspec_data) #[cm^-3]
+    nemodel=massmod.fitne(ne_data=ne_data,tspec_data=tspec_data,nemodeltype='double_beta_tied') #[cm^-3]
 
 
+    #write results as a string to go in a latex table
+    latex_combo=massmod.write_ne(nemodel,fn='')
+
+    
     #data reading and processing above
     ##########################################################################
     ######################################################################### 
     ##########################################################################
+
 
     '''
     FITTING MASS PROFILE
@@ -225,7 +251,7 @@ if __name__ == '__main__':
     Maximum likelihood parameter estimation
     '''
     
-    ml_results=massmod.fit_ml(ne_data,tspec_data,nemodel)
+    ml_results=massmod.fit_ml(ne_data,tspec_data,nemodel,cluster)
 
     #http://mathworld.wolfram.com/MaximumLikelihood.html, >define own likelihood functoin
 
@@ -234,12 +260,13 @@ if __name__ == '__main__':
     MCMC output
     '''
     #col1: c, col2:rs, col3: normsersic
-    samples=massmod.fit_mcmc(ne_data,tspec_data,nemodel,ml_results)
+    samples=massmod.fit_mcmc(ne_data,tspec_data,nemodel,ml_results,cluster)
+
 
 
     #col1: rdelta, col2, mdelta, col3: mnfw, col4: mdev, col5: mgas
     #multi-threading using joblib
-    samples_aux=massmod.posterior_mcmc(samples,nemodel)
+    samples_aux=massmod.posterior_mcmc(samples=samples,nemodel=nemodel,cluster=cluster)
 
 
     '''
@@ -271,14 +298,14 @@ if __name__ == '__main__':
     '''
     Results MCMC - plotting, free params output
     '''
-    fig1=massmod.plt_mcmc_freeparam(mcmc_results,samples,tspec_data)
+    fig1=massmod.plt_mcmc_freeparam(mcmc_results,samples,tspec_data,cluster)
 
 
 
     '''
     Summary plot
     '''
-    fig2=massmod.plt_summary(ne_data,tspec_data,nemodel,mcmc_results)
+    fig2=massmod.plt_summary(ne_data,tspec_data,nemodel,mcmc_results,cluster)
 
     #plotting ne spectral results - just for my data, don't use for examples
     ax=fig2.add_subplot(2,2,1) 
@@ -286,6 +313,15 @@ if __name__ == '__main__':
     plt.errorbar(r_pos,ne_spec,xerr=[xerr_pos_l,xerr_pos_u],yerr=[ne_spec_el,ne_spec_eu],linestyle='none',color='b')
 
 
+
+    '''
+    to go in paper
+    '''
+    fig3=massmod.plt_summary_nice(ne_data,tspec_data,nemodel,mcmc_results,cluster)
+
+    ax=fig3.add_subplot(1,3,1) 
+    plt.loglog(r_pos, ne_spec,'bo')
+    plt.errorbar(r_pos,ne_spec,xerr=[xerr_pos_l,xerr_pos_u],yerr=[ne_spec_el,ne_spec_eu],linestyle='none',color='b')
 
     ##########################################################################
     ######################################################################### 
@@ -298,44 +334,5 @@ if __name__ == '__main__':
     print '/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod_ref'+str(params.refindex)+'.pdf'
     #fig1.savefig('/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod_ref'+str(params.refindex)+'_mcmc.pdf',dpi=300,format='PDF',bbox_inches='tight')
     #fig2.savefig('/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod_ref'+str(params.refindex)+'.pdf',dpi=300,format='PDF',bbox_inches='tight')
+    fig3.savefig('/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod.pdf',dpi=300,format='PDF',bbox_inches='tight')
 
-
-
-'''
-Deprecated
-'''
-
-#    if params.fitpdat==0: #using apec norm gas densities
-#        if params.fitbetamodel == 1:
-#            nemodel_bfp=massmod.fitne_betamodel(r_pos,ne,ne_err)
-#            nemodel_bfp[0]=nemodel_bfp[0]*params.mu_e*uconv.mA #to change ne>rho
-#            rhofit_arr=massmod.betamodel(nemodel_bfp,r_pos) #[kg cm-3]
-#        elif params.fitbetamodel == 2:
-#            nemodel_bfp=massmod.fitne_doublebetamodel(r_pos,ne,ne_err)
-#            nemodel_bfp[0]=nemodel_bfp[0]*params.mu_e*uconv.mA #to change ne>rho
-#            nemodel_bfp[3]=nemodel_bfp[3]*params.mu_e*uconv.mA #to change ne>rho
-#            rhofit_arr=massmod.doublebetamodel(nemodel_bfp,r_pos) #[kg cm-3]
-#        elif params.fitbetamodel == 0:
-#            nemodel_bfp=massmod.fitne_cuspedbetamodel(r_pos,ne,ne_err)
-#            nemodel_bfp[0]=nemodel_bfp[0]*params.mu_e*uconv.mA #to change ne>rho
-#            rhofit_arr=massmod.cuspedbetamodel(nemodel_bfp,r_pos) #[kg cm-3]
-#
-#    elif params.fitpdat==1: #using proffit deprojected data
-#        if params.fitbetamodel == 1:
-#            nemodel_bfp=massmod.fitne_betamodel(pdat['RADIUS'],pdat['DENSITY'],pdat['ERR_DENS'])
-#            nemodel_bfp[0]=nemodel_bfp[0]*params.mu_e*uconv.mA #to change ne>rho
-#            rhofit_arr=massmod.betamodel(nemodel_bfp,r_pos) #[kg cm-3]
-#
-#
-#        elif params.fitbetamodel == 2:
-#            nemodel_bfp=massmod.fitne_doublebetamodel(pdat['RADIUS'],pdat['DENSITY'],pdat['ERR_DENS'])
-#            nemodel_bfp[0]=nemodel_bfp[0]*params.mu_e*uconv.mA #to change ne>rho
-#            nemodel_bfp[3]=nemodel_bfp[3]*params.mu_e*uconv.mA #to change ne>rho
-#            rhofit_arr=massmod.doublebetamodel(nemodel_bfp,r_pos) #[kg cm-3]
-#
-#
-#        elif params.fitbetamodel == 0:
-#            nemodel_bfp=massmod.fitne_cuspedbetamodel(pdat['RADIUS'],pdat['DENSITY'],pdat['ERR_DENS'])
-#            nemodel_bfp[0]=nemodel_bfp[0]*params.mu_e*uconv.mA #to change ne>rho
-#            rhofit_arr=massmod.cuspedbetamodel(nemodel_bfp,r_pos) #[kg cm-3]
-#

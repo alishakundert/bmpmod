@@ -22,10 +22,11 @@ import time
 import emcee
 import corner
 
+import defaultparams.cosmology as cosmo
+import defaultparams.uconv as uconv
+import defaultparams.mcmcparams as mcmcparams
 
-import massmod_params as params
-import massmod_uconv as uconv
-from massmod_plotting import plt_mcmc_freeparam, plt_summary
+from massmod_plotting import plt_mcmc_freeparam, plt_summary, plt_summary_nice
 
 
 import joblib
@@ -37,7 +38,7 @@ from joblib import Parallel, delayed
 Mass models
 '''
 
-def nfw_mass_model(r, c, rs):
+def nfw_mass_model(r, c, rs, z):
 
     '''
     Calculates the NFW profile mass.
@@ -67,25 +68,26 @@ def nfw_mass_model(r, c, rs):
     
     r=1.*np.array(r) 
 
+    rho_crit=calc_rhocrit(z)
 
     func_c=np.log(1.+c)-(c/(1.+c)) #[unitless]
 
     x=r/rs
     func_x=np.log(1.+x)-(x/(1.+x)) #[unitless]
 
-    #characterstic params.overdensity
-    Deltavir=params.overdensity
+    #characterstic cosmo.overdensity
+    Deltavir=cosmo.overdensity
     delta_char=(Deltavir/3.)*((c**3.)/func_c) #[unitless]
     #nb: removed OmegaM here because of eq 1 ettori2011
 
     #mass profile
-    M=4.*np.pi*params.rho_crit*delta_char*(rs**3.)*func_x #[kg]
-    #M=4.*np.pi*params.rho_crit*delta_char*(rs**3.)*func_x/uconv.Msun #[Msun]
+    M=4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x #[kg]
+    #M=4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x/uconv.Msun #[Msun]
 
     return M 
 
 
-def sersic_mass_model(x,normsersic):
+def sersic_mass_model(x,normsersic,cluster):
 
     '''
     Calculates the stellar mass according to the 3D density profile of the form of the deprojected Sersic profile (Lima Neto+ 1999. Eq 20).
@@ -114,18 +116,18 @@ def sersic_mass_model(x,normsersic):
     '''
     
     
-    nu=params.sersic_n**-1.
+    nu=cluster['bcg_sersic_n']**-1.
 
     p=1.-(0.6097*nu)+(0.00563*(nu**2.)) #limaneto1999
-    a=params.re*np.exp(-((0.6950-np.log(nu))/nu)-0.1789)
+    a=cluster['bcg_re']*np.exp(-((0.6950-np.log(nu))/nu)-0.1789)
     f=np.exp(-(((0.6950-np.log(nu))/nu)-0.1789))
 
-    
-    return (4*np.pi*(params.re**3.)*(f**3.)*(10.**normsersic)/nu)*scipy.special.gamma((3-p)/nu)*scipy.special.gammainc((3-p)/nu,(f**-nu)*(x/params.re)**nu) 
+
+    return (4*np.pi*(cluster['bcg_re']**3.)*(f**3.)*(10.**normsersic)/nu)*scipy.special.gamma((3-p)/nu)*scipy.special.gammainc((3-p)/nu,(f**-nu)*(x/cluster['bcg_re'])**nu) 
 
 
 
-def mgas_intmodel(x,nemodel_bfp):
+def mgas_intmodel(x,nemodel):
 
     '''
     Creates the varialble that needs to be integrated to calculate the gas mass.Intended to be used in the form:  Mgas = \int mgas_intmodel dr = \int 4 \pi r^2 \rho(r) dr, where \rho(r) is the model desribing the gas mass density
@@ -146,20 +148,20 @@ def mgas_intmodel(x,nemodel_bfp):
 
     '''
 
-    fac=4*np.pi*params.mu_e*uconv.mA/uconv.Msun 
-    #NB:params.mu_e*uconv.mA changes electron number density to gas mass density
+    fac=4*np.pi*cosmo.mu_e*uconv.mA/uconv.Msun 
+    #NB:cosmo.mu_e*uconv.mA changes electron number density to gas mass density
 
-    if params.nemodel_type=='single_beta':
-        return fac*(x**2.)*(uconv.cm_kpc**-3.)*betamodel(nemodel_bfp,x) #[Msun kpc2 kpc-3]
+    if nemodel['type'] =='single_beta':
+        return fac*(x**2.)*(uconv.cm_kpc**-3.)*betamodel(nemodel['parvals'],x) #[Msun kpc2 kpc-3]
 
-    elif params.nemodel_type=='double_beta':
-        return fac*(x**2.)*(uconv.cm_kpc**-3.)*doublebetamodel(nemodel_bfp,x) #[Msun kpc2 kpc-3]
+    elif nemodel['type']=='double_beta':
+        return fac*(x**2.)*(uconv.cm_kpc**-3.)*doublebetamodel(nemodel['parvals'],x) #[Msun kpc2 kpc-3]
 
-    elif params.nemodel_type=='cusped_beta':
-        return fac*(x**2.)*(uconv.cm_kpc**-3.)*cuspedbetamodel(nemodel_bfp,x) #[Msun kpc2 kpc-3]
+    elif nemodel['type']=='cusped_beta':
+        return fac*(x**2.)*(uconv.cm_kpc**-3.)*cuspedbetamodel(nemodel['parvals'],x) #[Msun kpc2 kpc-3]
 
-    elif params.nemodel_type=='double_beta_tied':
-        return fac*(x**2.)*(uconv.cm_kpc**-3.)*doublebetamodel_tied(nemodel_bfp,x) #[Msun kpc2 kpc-3]
+    elif nemodel['type']=='double_beta_tied':
+        return fac*(x**2.)*(uconv.cm_kpc**-3.)*doublebetamodel_tied(nemodel['parvals'],x) #[Msun kpc2 kpc-3]
 
 ##############################################################################
 ##############################################################################
@@ -328,7 +330,7 @@ def doublebetamodel_tied(pars,x):
 Integration models for total gravitating mass in T(r)
 '''
 
-def intmodel(nemodel_bfp, rs, c, normsersic, r_arr):
+def intmodel(nemodel, rs, c, normsersic, r_arr,cluster):
 
     '''
 
@@ -350,21 +352,21 @@ def intmodel(nemodel_bfp, rs, c, normsersic, r_arr):
 
     '''
 
-    if params.nemodel_type == 'single_beta':
-        return (betamodel(nemodel_bfp,r_arr)*(1./uconv.Msun)*(uconv.cm_kpc**-3.))*((nfw_mass_model(r_arr,c,rs)/uconv.Msun)+sersic_mass_model(r_arr,normsersic)) \
+    if nemodel['type'] == 'single_beta':
+        return (betamodel(nemodel['parvals'],r_arr)*(1./uconv.Msun)*(uconv.cm_kpc**-3.))*((nfw_mass_model(r_arr,c,rs,cluster['z'])/uconv.Msun)+sersic_mass_model(r_arr,normsersic,cluster)) \
             / (r_arr**2.)
     
 
-    if params.nemodel_type == 'double_beta':
-        return (doublebetamodel(nemodel_bfp,r_arr)*(1./uconv.Msun)*(uconv.cm_kpc**-3.))*((nfw_mass_model(r_arr,c,rs)/uconv.Msun)+sersic_mass_model(r_arr,normsersic)) \
+    if nemodel['type'] == 'double_beta':
+        return (doublebetamodel(nemodel['parvals'],r_arr)*(1./uconv.Msun)*(uconv.cm_kpc**-3.))*((nfw_mass_model(r_arr,c,rs,cluster['z'])/uconv.Msun)+sersic_mass_model(r_arr,normsersic,cluster)) \
             / (r_arr**2.)
 
-    if params.nemodel_type == 'cusped_beta':
-        return (cuspedbetamodel(nemodel_bfp,r_arr)*(1./uconv.Msun)*(uconv.cm_kpc**-3.))*((nfw_mass_model(r_arr,c,rs,)/uconv.Msun)+sersic_mass_model(r_arr,normsersic)) \
+    if nemodel['type'] == 'cusped_beta':
+        return (cuspedbetamodel(nemodel['parvals'],r_arr)*(1./uconv.Msun)*(uconv.cm_kpc**-3.))*((nfw_mass_model(r_arr,c,rs,cluster['z'])/uconv.Msun)+sersic_mass_model(r_arr,normsersic,cluster)) \
             / (r_arr**2.)
 
-    if params.nemodel_type == 'double_beta_tied':
-        return (doublebetamodel_tied(nemodel_bfp,r_arr)*(1./uconv.Msun)*(uconv.cm_kpc**-3.))*((nfw_mass_model(r_arr,c,rs)/uconv.Msun)+sersic_mass_model(r_arr,normsersic)) \
+    if nemodel['type'] == 'double_beta_tied':
+        return (doublebetamodel_tied(nemodel['parvals'],r_arr)*(1./uconv.Msun)*(uconv.cm_kpc**-3.))*((nfw_mass_model(r_arr,c,rs,cluster['z'])/uconv.Msun)+sersic_mass_model(r_arr,normsersic,cluster)) \
             / (r_arr**2.)
 
 
@@ -377,7 +379,7 @@ def intmodel(nemodel_bfp, rs, c, normsersic, r_arr):
 Fitting function for density profile
 '''
 
-def fitne(ne_data,tspec_data=0,nemodeltype=0):
+def fitne(ne_data,nemodeltype,tspec_data=0):
 
     '''
     
@@ -411,13 +413,6 @@ def fitne(ne_data,tspec_data=0,nemodeltype=0):
 
 
     '''
-    
-    #model to fit:
-    
-    #if no input model, use default model
-    if nemodeltype==0:
-        nemodeltype=params.nemodel_type
-
 
     #load data
     ui.load_arrays(1,np.array(ne_data['radius']),np.array(ne_data['ne']),np.array(ne_data['ne_err'])) 
@@ -430,16 +425,16 @@ def fitne(ne_data,tspec_data=0,nemodeltype=0):
         #param estimate
         betaguess=0.6
         rcguess=20. #units?????
-        S0guess=max(ne_data['ne'])
+        ne0guess=max(ne_data['ne'])
 
         #beta model
         ui.load_user_model(betamodel,"beta1d")
-        ui.add_user_pars("beta1d",["S0","rc","beta"])
+        ui.add_user_pars("beta1d",["ne0","rc","beta"])
         ui.set_source(beta1d) #creates model
         ui.set_full_model(beta1d)
 
         #set parameter values
-        ui.set_par(beta1d.S0,S0guess,min=0,max=10.*max(ne_data['ne']))
+        ui.set_par(beta1d.ne0,ne0guess,min=0,max=10.*max(ne_data['ne']))
         ui.set_par(beta1d.rc,rcguess,min=0.5,max=max(ne_data['radius']))
         ui.set_par(beta1d.beta,betaguess,min=0.1,max=1.)
 
@@ -447,28 +442,28 @@ def fitne(ne_data,tspec_data=0,nemodeltype=0):
     if nemodeltype == 'double_beta':
 
         #param estimate
-        S0guess1=max(ne_data['ne']) #[cm^-3]
+        ne0guess1=max(ne_data['ne']) #[cm^-3]
         rcguess1=10.  #[kpc]
         betaguess1=0.6
 
-        S0guess2=0.01*max(ne_data['ne']) #[cm^-3]
+        ne0guess2=0.01*max(ne_data['ne']) #[cm^-3]
         rcguess2=100. #[kpc]
         betaguess2=0.6
 
 
         #double beta model
         ui.load_user_model(doublebetamodel,"doublebeta1d")
-        ui.add_user_pars("doublebeta1d",["S01","rc1","beta1","S02","rc2","beta2"])
+        ui.add_user_pars("doublebeta1d",["ne01","rc1","beta1","ne02","rc2","beta2"])
         ui.set_source(doublebeta1d) #creates model
         ui.set_full_model(doublebeta1d)
 
 
         #set parameter values
-        ui.set_par(doublebeta1d.S01,S0guess1,min=0.00001*max(ne_data['ne']),max=100.*max(ne_data['ne']))
+        ui.set_par(doublebeta1d.ne01,ne0guess1,min=0.00001*max(ne_data['ne']),max=100.*max(ne_data['ne']))
         ui.set_par(doublebeta1d.rc1,rcguess1,min=0.,max=max(ne_data['radius']))
         ui.set_par(doublebeta1d.beta1,betaguess1,min=0.1,max=1.)
 
-        ui.set_par(doublebeta1d.S02,S0guess2,min=0.00001*max(ne_data['ne']),max=100.*max(ne_data['ne']))
+        ui.set_par(doublebeta1d.ne02,ne0guess2,min=0.00001*max(ne_data['ne']),max=100.*max(ne_data['ne']))
         ui.set_par(doublebeta1d.rc2,rcguess2,min=10.,max=max(ne_data['radius']))
         ui.set_par(doublebeta1d.beta2,betaguess2,min=0.1,max=1.)
 
@@ -478,17 +473,17 @@ def fitne(ne_data,tspec_data=0,nemodeltype=0):
         #param estimate
         betaguess=0.7
         rcguess=5. #[kpc]
-        S0guess=max(ne_data['ne']) 
+        ne0guess=max(ne_data['ne']) 
         alphaguess=10. #????
 
         #beta model
         ui.load_user_model(cuspedbetamodel,"cuspedbeta1d")
-        ui.add_user_pars("cuspedbeta1d",["S0","rc","beta","alpha"])
+        ui.add_user_pars("cuspedbeta1d",["ne0","rc","beta","alpha"])
         ui.set_source(cuspedbeta1d) #creates model
         ui.set_full_model(cuspedbeta1d)
 
         #set parameter values
-        ui.set_par(cuspedbeta1d.S0,S0guess,min=0.001*max(ne_data['ne']),max=10.*max(ne_data['ne']))
+        ui.set_par(cuspedbeta1d.ne0,ne0guess,min=0.001*max(ne_data['ne']),max=10.*max(ne_data['ne']))
         ui.set_par(cuspedbeta1d.rc,rcguess,min=1.,max=max(ne_data['radius']))
         ui.set_par(cuspedbeta1d.beta,betaguess,min=0.1,max=1.)
         ui.set_par(cuspedbeta1d.alpha,alphaguess,min=0.,max=100.)
@@ -496,27 +491,27 @@ def fitne(ne_data,tspec_data=0,nemodeltype=0):
     if nemodeltype == 'double_beta_tied':
 
         #param estimate
-        S0guess1=max(ne_data['ne'])
+        ne0guess1=max(ne_data['ne'])
         rcguess1=10. 
         betaguess1=0.6
 
-        S0guess2=0.01*max(ne_data['ne'])
+        ne0guess2=0.01*max(ne_data['ne'])
         rcguess2=100. 
         betaguess2=0.6
 
         #double beta model
         ui.load_user_model(doublebetamodel,"doublebeta1d")
-        ui.add_user_pars("doublebeta1d",["S01","rc1","beta1","S02","rc2","beta2"])
+        ui.add_user_pars("doublebeta1d",["ne01","rc1","beta1","ne02","rc2","beta2"])
         ui.set_source(doublebeta1d) #creates model
         ui.set_full_model(doublebeta1d)
 
 
         #set parameter values
-        ui.set_par(doublebeta1d.S01,S0guess1,min=0.00001*max(ne_data['ne']),max=100.*max(ne_data['ne']))
+        ui.set_par(doublebeta1d.ne01,ne0guess1,min=0.00001*max(ne_data['ne']),max=100.*max(ne_data['ne']))
         ui.set_par(doublebeta1d.rc1,rcguess1,min=0.,max=max(ne_data['radius']))
         ui.set_par(doublebeta1d.beta1,betaguess1,min=0.1,max=1.)
 
-        ui.set_par(doublebeta1d.S02,S0guess2,min=0.00001*max(ne_data['ne']),max=100.*max(ne_data['ne']))
+        ui.set_par(doublebeta1d.ne02,ne0guess2,min=0.00001*max(ne_data['ne']),max=100.*max(ne_data['ne']))
         ui.set_par(doublebeta1d.rc2,rcguess2,min=10.,max=max(ne_data['radius']))
         ui.set_par(doublebeta1d.beta2,betaguess2,min=0.1,max=1.)
 
@@ -541,6 +536,9 @@ def fitne(ne_data,tspec_data=0,nemodeltype=0):
     parmins=np.array(ui.get_conf_results().parmins)
     parmaxes=np.array(ui.get_conf_results().parmaxes)
 
+    parnames=[str(x).split('.')[1] for x in list(ui.get_conf_results().parnames)]
+
+
 
     #where errors are stuck on a hard limit, change error to Inf instead of None
     if None in list(parmins):
@@ -553,7 +551,17 @@ def fitne(ne_data,tspec_data=0,nemodeltype=0):
     
     
     #set up a dictionary to contain usefule results of fit including: parvals - values of free params; parmins - min bound on error of free params; parmaxes - max bound on error of free params 
-    nemodel = {'type':nemodeltype,'parvals':parvals, 'parmins':parmins, 'parmaxes':parmaxes, 'rchisq':rchisq}
+
+
+    nemodel = {}
+    nemodel['type']=nemodeltype
+    nemodel['parnames']=parnames
+    nemodel['parvals']=parvals
+    nemodel['parmins']=parmins
+    nemodel['parmaxes']=parmaxes
+    nemodel['chisq']=chisq
+    nemodel['dof']=dof
+    nemodel['rchisq']=rchisq
 
 
     #calculate an array that contains the modeled gas density at the same radii positions as the tspec array and add to nemodel dictionary
@@ -587,7 +595,7 @@ def fitne(ne_data,tspec_data=0,nemodeltype=0):
 ##############################################################################
 
 
-def Tmodel_func(c, rs, normsersic, ne_data, tspec_data, nemodel):
+def Tmodel_func(c, rs, normsersic, ne_data, tspec_data, nemodel, cluster):
     
     '''
     Calculates the non-parameteric model fit to the observed temperature profile. Model T(r) is calculated from Gastaldello+07 Eq. 2, which follows from solving the equation of hydrostatic equilibrium for temperature. 
@@ -613,16 +621,16 @@ def Tmodel_func(c, rs, normsersic, ne_data, tspec_data, nemodel):
 
     #return Tmodel given param vals
 
-    ne_ref=nemodel['nefit'][params.refindex]
-    tspec_ref=tspec_data['tspec'][params.refindex]
+    ne_ref=nemodel['nefit'][cluster['refindex']]
+    tspec_ref=tspec_data['tspec'][cluster['refindex']]
             	
-    radius_ref=tspec_data['radius'][params.refindex] 
+    radius_ref=tspec_data['radius'][cluster['refindex']] 
 
     tfit_arr=[] #to hold array of fit temperature
     #iterate over all radii values in profile
     for rr in range(0,len(tspec_data)):
 
-        if rr==params.refindex:
+        if rr==cluster['refindex']:
             tfit_arr.append(tspec_data['tspec'][rr])
             continue
              
@@ -632,9 +640,9 @@ def Tmodel_func(c, rs, normsersic, ne_data, tspec_data, nemodel):
 
 
 
-        intfunc = lambda x: intmodel(nemodel['parvals'],rs=rs, c=c, normsersic=normsersic, r_arr=x)
+        intfunc = lambda x: intmodel(nemodel,rs=rs, c=c, normsersic=normsersic, r_arr=x,cluster=cluster)
 
-        finfac_t=((params.mu*uconv.mA*uconv.G)/(ne_selected*(uconv.cm_m**-3.))) #[m6 kg-1 s-2] 
+        finfac_t=((cosmo.mu*uconv.mA*uconv.G)/(ne_selected*(uconv.cm_m**-3.))) #[m6 kg-1 s-2] 
 
 
         tfit_r=(tspec_ref*ne_ref/ne_selected)-(uconv.joule_kev*finfac_t*(uconv.Msun_kg**2.)*(uconv.kpc_m**-4.)*scipy.integrate.quad(intfunc,radius_ref,radius_selected)[0]) #[kev]
@@ -647,7 +655,7 @@ def Tmodel_func(c, rs, normsersic, ne_data, tspec_data, nemodel):
 
 
 
-def calc_rdelta_p(row, nemodel_bfp):
+def calc_rdelta_p(row, nemodel,cluster):
 
 
     '''
@@ -682,40 +690,42 @@ def calc_rdelta_p(row, nemodel_bfp):
 
     #rdelta(dm only first)
     rdelta_dm=c*rs
-    #this is the radius where the density of dm interior is 500*params.rho_crit
-    #within this radius the total mass density will be >500*params.rho_crit, so need a larger radius to get to 500
+    #this is the radius where the density of dm interior is 500*cosmo.rho_crit
+    #within this radius the total mass density will be >500*cosmo.rho_crit, so need a larger radius to get to 500
   
     #calculate mass density at rdelta_dm
-    mass_nfw=nfw_mass_model(rdelta_dm,c,rs) #[kg]
+    mass_nfw=nfw_mass_model(rdelta_dm,c,rs,cluster['z']) #[kg]
 
-    mass_dev=sersic_mass_model(rdelta_dm,normsersic)*uconv.Msun #[kg]
+    mass_dev=sersic_mass_model(rdelta_dm,normsersic,cluster)*uconv.Msun #[kg]
 
 
-    intfunc = lambda x: mgas_intmodel(rdelta_dm,nemodel_bfp)
+    intfunc = lambda x: mgas_intmodel(rdelta_dm,nemodel)
     mass_gas=scipy.integrate.quad(intfunc,0,rdelta_dm)[0]*uconv.Msun #[kg]
 
     
     mass_tot=mass_nfw+mass_dev+mass_gas
 
-    ratio=(mass_tot/((4./3.)*np.pi*rdelta_dm**3.))/params.rho_crit
+    rho_crit=calc_rhocrit(cluster['z'])
+    ratio=(mass_tot/((4./3.)*np.pi*rdelta_dm**3.))/rho_crit
 
 
     #now let's step forward to find true rdelta(total mass)
     rdelta_tot=int(rdelta_dm)
-    while ratio>params.overdensity:
+    while ratio>cosmo.overdensity:
 
         rdelta_tot+=1
 
-        mass_nfw=nfw_mass_model(rdelta_tot,c,rs) #[kg]
+        mass_nfw=nfw_mass_model(rdelta_tot,c,rs,cluster['z']) #[kg]
 
-        mass_dev=sersic_mass_model(rdelta_tot,normsersic)*uconv.Msun #[kg]
+        mass_dev=sersic_mass_model(rdelta_tot,normsersic,cluster)*uconv.Msun #[kg]
 
-        intfunc = lambda x: mgas_intmodel(rdelta_tot,nemodel_bfp)
+        intfunc = lambda x: mgas_intmodel(rdelta_tot,nemodel)
         mass_gas=scipy.integrate.quad(intfunc,0,rdelta_tot)[0]*uconv.Msun #[kg]
 
         mass_tot=mass_nfw+mass_dev+mass_gas
 
-        ratio=(mass_tot/((4./3.)*np.pi*rdelta_tot**3.))/params.rho_crit
+        rho_crit=calc_rhocrit(cluster['z'])
+        ratio=(mass_tot/((4./3.)*np.pi*rdelta_tot**3.))/rho_crit
 
     return rdelta_tot, mass_tot/uconv.Msun, mass_nfw/uconv.Msun, mass_dev/uconv.Msun, mass_gas/uconv.Msun
 
@@ -724,7 +734,7 @@ def calc_rdelta_p(row, nemodel_bfp):
 
 
 
-def posterior_mcmc(samples,nemodel):
+def posterior_mcmc(samples,nemodel,cluster,Ncores=mcmcparams.Ncores):
 
     '''
     Calculate the radius corresponding to the given overdensity i.e. the radius corresponding to a mean overdensity that is some factor times the critical densiy at the redshift of the cluster. Within this radius, calculate the total mass, DM mass, stellar mass, gas mass.
@@ -757,7 +767,7 @@ def posterior_mcmc(samples,nemodel):
 
     '''
 
-    samples_aux=Parallel(n_jobs=params.Ncores)(delayed(calc_rdelta_p)(row,nemodel['parvals']) for row in samples)
+    samples_aux=Parallel(n_jobs=Ncores)(delayed(calc_rdelta_p)(row,nemodel,cluster) for row in samples)
 
     return np.array(samples_aux)
 
@@ -771,7 +781,7 @@ MCMC
 '''
 
 #define the log likelihood function, here assumes normal distribution
-def lnlike(theta, x, y, yerr,ne_data,tspec_data,nemodel):
+def lnlike(theta, x, y, yerr,ne_data,tspec_data,nemodel,cluster):
     '''
     Log(likelihood function) comparing observed and model temperature profile values.
 
@@ -795,13 +805,22 @@ def lnlike(theta, x, y, yerr,ne_data,tspec_data,nemodel):
 
     c, rs, normsersic = theta
     
-    model = Tmodel_func(c, rs, normsersic, ne_data, tspec_data, nemodel)
+    model = Tmodel_func(c, rs, normsersic, ne_data, tspec_data, nemodel, cluster)
 
     inv_sigma2 = 1.0/(yerr**2) #CHECK THIS!!!
     return -0.5*(np.sum((y-model)**2*inv_sigma2 - np.log(inv_sigma2)))
     
 #log-prior
-def lnprior(theta):
+def lnprior(theta,
+            c_boundmin=mcmcparams.c_boundmin,
+            c_boundmax=mcmcparams.c_boundmax,
+
+            rs_boundmin=mcmcparams.rs_boundmin,
+            rs_boundmax=mcmcparams.rs_boundmax,
+
+            normsersic_boundmin=mcmcparams.normsersic_boundmin,
+            normsersic_boundmax=mcmcparams.normsersic_boundmax):
+
     '''
     Ensures that free parameters do not go outside bounds
 
@@ -810,20 +829,31 @@ def lnprior(theta):
     theta (array): current values of free-paramters; set by WHICH FUNCTION?
     '''
     c, rs, normsersic = theta
-    if params.c_boundmin < c < params.c_boundmax and params.rs_boundmin < rs < params.rs_boundmax and params.normsersic_boundmin < normsersic < params.normsersic_boundmax:
+    if c_boundmin < c < c_boundmax and rs_boundmin < rs < rs_boundmax and normsersic_boundmin < normsersic < normsersic_boundmax:
         return 0.0
     return -np.inf
 
 #full-log probability function
-def lnprob(theta, x, y, yerr,ne_data,tspec_data,nemodel):
+def lnprob(theta, x, y, yerr,ne_data,tspec_data,nemodel,cluster):
     lp = lnprior(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + lnlike(theta, x, y, yerr,ne_data,tspec_data,nemodel)
+    return lp + lnlike(theta, x, y, yerr,ne_data,tspec_data,nemodel,cluster)
 
 
 
-def fit_ml(ne_data,tspec_data,nemodel):
+def fit_ml(ne_data,tspec_data,nemodel,cluster, 
+           c_guess=mcmcparams.c_guess, 
+           c_boundmin=mcmcparams.c_boundmin,
+           c_boundmax=mcmcparams.c_boundmax,
+
+           rs_guess=mcmcparams.rs_guess, 
+           rs_boundmin=mcmcparams.rs_boundmin,
+           rs_boundmax=mcmcparams.rs_boundmax,
+
+           normsersic_guess=mcmcparams.normsersic_guess, 
+           normsersic_boundmin=mcmcparams.normsersic_boundmin,
+           normsersic_boundmax=mcmcparams.normsersic_boundmax):
 
     '''
     Perform maximum likelikhood parameter estimatation. Results can be used as initial guess for more intensive MCMC parameter search.
@@ -845,7 +875,7 @@ def fit_ml(ne_data,tspec_data,nemodel):
 
     nll = lambda *args: -lnlike(*args)
 
-    result = op.minimize(nll, [params.c_guess, params.rs_guess, params.normsersic_guess], args=(tspec_data['radius'],tspec_data['tspec'],tspec_data['tspec_err'],ne_data,tspec_data,nemodel),bounds=((params.c_boundmin,params.c_boundmax),(params.rs_boundmin,params.rs_boundmax),(params.normsersic_boundmin,params.normsersic_boundmax)))
+    result = op.minimize(nll, [c_guess, rs_guess, normsersic_guess], args=(tspec_data['radius'],tspec_data['tspec'],tspec_data['tspec_err'],ne_data,tspec_data,nemodel,cluster),bounds=((c_boundmin,c_boundmax),(rs_boundmin,rs_boundmax),(normsersic_boundmin,normsersic_boundmax)))
 
 
     c_ml, rs_ml, normsersic_ml = result["x"]
@@ -858,7 +888,12 @@ def fit_ml(ne_data,tspec_data,nemodel):
     
 
 
-def fit_mcmc(ne_data,tspec_data,nemodel,ml_results):
+def fit_mcmc(ne_data,tspec_data,nemodel,ml_results,cluster,
+             Ncores=mcmcparams.Ncores,
+             Nwalkers=mcmcparams.Nwalkers,
+             Nsamples=mcmcparams.Nsamples,
+             Nburnin=mcmcparams.Nburnin):
+
     '''
     Run MCMC on the free parameters of model for total gravitating mass. Utilizes EMCEE. 
 
@@ -878,7 +913,7 @@ def fit_mcmc(ne_data,tspec_data,nemodel,ml_results):
                 col 1: c
                 col 2: rs
                 col 3: normsersic
-            NB: length of samples array set by params.Nwalkers * params.Nsamples
+            NB: length of samples array set by Nwalkers * Nsamples
 
     References:
     -----------
@@ -887,18 +922,18 @@ def fit_mcmc(ne_data,tspec_data,nemodel,ml_results):
     '''
 
     #initialize walkers - result comes from ML fit before
-    ndim, nwalkers = 3, params.Nwalkers
+    ndim, nwalkers = 3, Nwalkers
     pos = [ml_results + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
 
 
     
     #sampler
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(tspec_data['radius'],tspec_data['tspec'],tspec_data['tspec_err'],ne_data,tspec_data,nemodel),threads=params.Ncores)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(tspec_data['radius'],tspec_data['tspec'],tspec_data['tspec_err'],ne_data,tspec_data,nemodel,cluster),threads=Ncores)
     #WHY ARE THE ARGS THE WAY THEY ARE???
 
     #run mcmc for 500 steps
-    sampler.run_mcmc(pos, params.Nsamples)
-    samples = sampler.chain[:, params.Nburnin:, :].reshape((-1, ndim))
+    sampler.run_mcmc(pos, Nsamples)
+    samples = sampler.chain[:, Nburnin:, :].reshape((-1, ndim))
     #length of samples = walkers*steps
     
     return samples
@@ -938,7 +973,7 @@ def find_nemodeltype(ne_data,tspec_data):
     opt_rchisq=[]
 
     for ii in range(0,len(opt_models)):
-        nemodel=fitne(ne_data,tspec_data,nemodeltype=opt_models[ii])
+        nemodel=fitne(ne_data=ne_data,nemodeltype=opt_models[ii],tspec_data=tspec_data)
         opt_rchisq.append(nemodel['rchisq'])
 
     opt_rchisq=np.array(opt_rchisq)
@@ -947,3 +982,49 @@ def find_nemodeltype(ne_data,tspec_data):
 
     return opt_models[ind]
                       
+
+#############################################################################
+#############################################################################
+############################################################################
+
+
+def write_ne(nemodel,fn):
+
+    combo=str(nemodel['type'])
+    for ii in range(0,len(nemodel['parvals'])):
+
+        combo+=' & '
+
+        if (nemodel['parnames'][ii]=='ne01')|(nemodel['parnames'][ii]=='ne0'): #ne01
+            combo+='$'+str(np.round(nemodel['parvals'][ii]*(10**1.),2))+'_{'+str(np.round(nemodel['parmins'][ii]*(10**1.),2))+'}^{+'+str(np.round(nemodel['parmaxes'][ii]*(10**1.),2))+'}$'
+            continue
+
+        if nemodel['parnames'][ii]=='rc1': #rc1
+            combo+='$'+str(np.round(nemodel['parvals'][ii],2))+'_{'+str(np.round(nemodel['parmins'][ii],2))+'}^{+'+str(np.round(nemodel['parmaxes'][ii],2))+'}$'
+            continue
+
+        if (nemodel['parnames'][ii]=='beta1')|(nemodel['parnames'][ii]=='beta'): #beta1
+            combo+='$'+str(np.round(nemodel['parvals'][ii],2))+'_{'+str(np.round(nemodel['parmins'][ii],2))+'}^{+'+str(np.round(nemodel['parmaxes'][ii],2))+'}$'
+            continue
+
+
+        if nemodel['parnames'][ii]=='ne02': #ne02
+            combo+='$'+str(np.round(nemodel['parvals'][ii]*(10**3.),2))+'_{'+str(np.round(nemodel['parmins'][ii]*(10**3.),2))+'}^{+'+str(np.round(nemodel['parmaxes'][ii]*(10**3.),2))+'}$'
+            continue
+
+        if nemodel['parnames'][ii]=='rc2': #rc2
+            combo+='$'+str(int(np.round(nemodel['parvals'][ii],0)))+'_{'+str(int(np.round(nemodel['parmins'][ii],0)))+'}^{+'+str(int(np.round(nemodel['parmaxes'][ii],0)))+'}$'
+            continue
+    combo+=' & '+str(np.round(nemodel['chisq'],1))+'/'+str(nemodel['dof'])+'('+str(np.round(nemodel['rchisq'],2))+')'
+
+    return combo
+
+
+
+
+def calc_rhocrit(z):
+
+    Hz=cosmo.H0*((cosmo.OmegaL+(cosmo.OmegaM*(1.+z)**3.))**0.5)
+    rho_crit=(3.*((Hz*uconv.km_Mpc)**2.))/(8.*np.pi*(uconv.G*(uconv.m_kpc**3.)))  #[kg kpc^-3]
+
+    return rho_crit

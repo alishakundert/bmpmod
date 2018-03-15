@@ -1,7 +1,8 @@
 
 '''
-constants
+constants and unit conversion factors
 '''
+
 #for unit conversions
 Mpc_cm=3.086e24 #[mpc > cm]
 kpc_cm=3.086e+21 #[kpc > cm]

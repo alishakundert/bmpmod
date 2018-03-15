@@ -1,3 +1,6 @@
+import numpy as np
+import uconv as uconv
+
 '''
 cosmology
 '''
@@ -12,6 +15,13 @@ gas composition
 #assume fully ionized gas
 H_massfraction=0.75
 He_massfraction=0.25
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+
+#put this somewhere else...
 
 #molecular weight things
 
