@@ -1,4 +1,9 @@
-__all__ = ["massmod_func",
+__all__ = ["fit_temperature",
            "massmod_writeout",
-           "massmod_plotting",
-           "set_prof_data"]
+           "plotting",
+           "set_prof_data",
+           "density_models",
+           "mass_models",
+           "fit_density",
+           "posterior_mcmc",
+           "gen"]

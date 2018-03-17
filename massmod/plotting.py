@@ -5,12 +5,17 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-import massmod_func as massmod
+import fit_temperature 
+
 import defaultparams.uconv as uconv
 import defaultparams.cosmology as cosmo
 
 import scipy
 import scipy.integrate
+
+from density_models import *
+from mass_models import *
+
 
 
 def seplog(n):
@@ -52,7 +57,9 @@ def plt_mcmc_freeparam(mcmc_results, samples, tspec_data, cluster):
 
     plt.annotate(r'$c = '+str(np.round(mcmc_results['c'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['c'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['c'][1],decimals=2))+'}$',(0.7,0.8),xycoords='figure fraction')
     plt.annotate(r'$R_{s} = '+str(np.round(mcmc_results['rs'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['rs'][2],decimals=1))+'}^{+'+str(np.round(mcmc_results['rs'][1],decimals=1))+'}$ kpc',(0.7,0.75),xycoords='figure fraction')
-    plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot}]) = '+str(np.round(mcmc_results['normsersic'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['normsersic'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['normsersic'][1],decimals=2))+'}$',(0.7,0.7),xycoords='figure fraction')
+
+    if cluster['count_mstar']==1:
+        plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot}]) = '+str(np.round(mcmc_results['normsersic'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['normsersic'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['normsersic'][1],decimals=2))+'}$',(0.7,0.7),xycoords='figure fraction')
 
     return fig1
 
@@ -127,18 +134,34 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     final kT profile with c, rs
     '''
 
-    tfit_arr = massmod.Tmodel_func(mcmc_results['c'][0],
-                                   mcmc_results['rs'][0],
-                                   mcmc_results['normsersic'][0],
-                                   ne_data, tspec_data, nemodel, cluster)
+    if cluster['count_mstar']==1:
+        tfit_arr = fit_temperature.Tmodel_func(ne_data=ne_data, 
+                                               tspec_data=tspec_data, 
+                                               nemodel=nemodel, 
+                                               cluster=cluster,
+                                               c=mcmc_results['c'][0],
+                                               rs=mcmc_results['rs'][0],
+                                               normsersic=mcmc_results['normsersic'][0])
+
+    elif cluster['count_mstar']==0:
+        tfit_arr = fit_temperature.Tmodel_func(ne_data=ne_data, 
+                                               tspec_data=tspec_data, 
+                                               nemodel=nemodel, 
+                                               cluster=cluster,
+                                               c=mcmc_results['c'][0],
+                                               rs=mcmc_results['rs'][0])
+
+
 
     ax = fig2.add_subplot(2, 2, 2)
 
     plt.semilogx(tspec_data['radius'], tspec_data['tspec'], 'bo')
 
     plt.errorbar(tspec_data['radius'], tspec_data['tspec'],
-                 xerr=[tspec_data['radius_lowerbound'], tspec_data['radius_upperbound']],
-                 yerr=[tspec_data['tspec_lowerbound'],tspec_data['tspec_upperbound']],
+                 xerr=[tspec_data['radius_lowerbound'], 
+                       tspec_data['radius_upperbound']],
+                 yerr=[tspec_data['tspec_lowerbound'],
+                       tspec_data['tspec_upperbound']],
                  linestyle='none', color='b')
 
     plt.xlabel('r [kpc]')
@@ -148,7 +171,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
                  + str(int(tspec_data['radius'][cluster['refindex']]))
                  + ' kpc', (0.05,0.9), xycoords='axes fraction')
 
-    plt.ylim(0, 4)
+    plt.ylim(ymin=0)
     plt.xlim(xmin=1)
 
     plt.semilogx(tspec_data['radius'], np.array(tfit_arr), 'r-')
@@ -163,16 +186,19 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
 
     xplot = np.logspace(np.log10(1.), np.log10(900.), 100)
 
-    mass_nfw = massmod.nfw_mass_model(xplot,
-                                      mcmc_results['c'][0],
-                                      mcmc_results['rs'][0],
-                                      cluster['z']) \
+    mass_nfw = nfw_mass_model(xplot,
+                              mcmc_results['c'][0],
+                              mcmc_results['rs'][0],
+                              cluster['z']) \
         / uconv.Msun
+    
+    if cluster['count_mstar']==1:
+        mass_dev = sersic_mass_model(xplot, mcmc_results['normsersic'][0],
+                                     cluster)  # Msun
+    elif cluster['count_mstar']==0:
+        mass_dev=0.
 
-    mass_dev = massmod.sersic_mass_model(xplot, mcmc_results['normsersic'][0],
-                                         cluster)  # Msun
-
-    intfunc = lambda x: massmod.mgas_intmodel(x, nemodel)
+    intfunc = lambda x: mgas_intmodel(x, nemodel)
     mass_gas = []
     for xx in xplot:
         mass_gas.append(scipy.integrate.quad(intfunc, 0, xx)[0])
@@ -181,7 +207,10 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
 
     plt.loglog(xplot, mass_tot, 'r-', label='M$_{\mathrm{tot}}$')
     plt.loglog(xplot, mass_nfw, 'b-', label='M$_{\mathrm{DM}}$')
-    plt.loglog(xplot, mass_dev, 'g-', label='M$_{\star}$')
+
+    if cluster['count_mstar']==1:
+        plt.loglog(xplot, mass_dev, 'g-', label='M$_{\star}$')
+
     plt.loglog(xplot, mass_gas, 'y-', label='M$_{\mathrm{gas}}$')
 
     handles, labels = ax.get_legend_handles_labels()
@@ -193,12 +222,6 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     plt.xlabel('r [kpc]')
     plt.ylabel('mass [$M_{\odot}$]')
 
-    # add final annotations for fit
-    c_err = (np.abs(mcmc_results['c'][1])+np.abs(mcmc_results['c'][2]))/2.
-    rs_err = (np.abs(mcmc_results['rs'][1])+np.abs(mcmc_results['rs'][2]))/2.
-    normsersic_err = (np.abs(mcmc_results['normsersic'][1])
-        + np.abs(mcmc_results['normsersic'][2])) \
-        / 2.
 
     plt.annotate(r'$c_{'+str(int(cosmo.overdensity))+'} = '
         + str(np.round(mcmc_results['c'][0], 1))
@@ -211,59 +234,75 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
         + '}^{+'+str(np.round(mcmc_results['rs'][1], 1))+'}$ kpc',
         (0.55, 0.4), xycoords='figure fraction')
 
-    plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot}]) = '
-        + str(np.round(mcmc_results['normsersic'][0], 1))
-        + '_{-'+str(np.round(mcmc_results['normsersic'][2], 2))
-        + '}^{+'+str(np.round(mcmc_results['normsersic'][1], 2))+'}$',
-        (0.55, 0.35), xycoords='figure fraction')
+    if cluster['count_mstar']==1:
+        plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot}]) = '
+                     + str(np.round(mcmc_results['normsersic'][0], 1))
+                     + '_{-'+str(np.round(mcmc_results['normsersic'][2], 2))
+                     + '}^{+'+str(np.round(mcmc_results['normsersic'][1], 2))
+                     +'}$',
+                     (0.55, 0.35), xycoords='figure fraction')
 
-    plt.annotate(r'$R_{eff}=$'+str(cluster['bcg_re'])+' kpc',
-        (0.8, 0.45), xycoords='figure fraction')
+        plt.annotate(r'$R_{eff}=$'+str(cluster['bcg_re'])+' kpc',
+                     (0.8, 0.45), xycoords='figure fraction')
 
-    plt.annotate(r'$n_{\mathrm{Sersic}}$='+str(cluster['bcg_sersic_n']),
-        (0.8, 0.4), xycoords='figure fraction')
+        plt.annotate(r'$n_{\mathrm{Sersic}}$='+str(cluster['bcg_sersic_n']),
+                     (0.8, 0.4), xycoords='figure fraction')
 
     plt.annotate('$R_{'+str(int(cosmo.overdensity))+'}='
-        + str(int(np.round(mcmc_results['rdelta'][0], 0)))
-        + '_{-'+str(int(np.round(mcmc_results['rdelta'][2], 0)))
-        + '}^{+'+str(int(np.round(mcmc_results['rdelta'][1], 0)))+'}$ kpc',
-        (0.55, 0.25), xycoords='figure fraction')
+                 + str(int(np.round(mcmc_results['rdelta'][0], 0)))
+                 + '_{-'+str(int(np.round(mcmc_results['rdelta'][2], 0)))
+                 + '}^{+'+str(int(np.round(mcmc_results['rdelta'][1], 0)))
+                 +'}$ kpc',
+                 (0.55, 0.25), xycoords='figure fraction')
 
     plt.annotate('$M_{'+str(int(cosmo.overdensity))+'}='
-        + str(np.round(seplog(mcmc_results['mdelta'][0])[0], 2))
-        + '_{-'+str(np.round(mcmc_results['mdelta'][2]
-            * 10**-seplog(mcmc_results['mdelta'][0])[1], 2))
-        + '}^{+'+str(np.round(mcmc_results['mdelta'][1]
-            * 10**-seplog(mcmc_results['mdelta'][0])[1], 2))
-        + '} \ 10^{'+str(seplog(mcmc_results['mdelta'][0])[1])+'} \ M_{\odot}$',
-        (0.55, 0.2), xycoords='figure fraction')
+                 + str(np.round(seplog(mcmc_results['mdelta'][0])[0], 2))
+                 + '_{-'
+                 +str(np.round(mcmc_results['mdelta'][2]
+                               * 10**-seplog(mcmc_results['mdelta'][0])[1], 2))
+                 + '}^{+'
+                 +str(np.round(mcmc_results['mdelta'][1]
+                               * 10**-seplog(mcmc_results['mdelta'][0])[1], 2))
+                 + '} \ 10^{'+str(seplog(mcmc_results['mdelta'][0])[1])
+                 +'} \ M_{\odot}$',
+                 (0.55, 0.2), xycoords='figure fraction')
 
     plt.annotate('$M_{DM}(R_{'+str(int(cosmo.overdensity))+'})='
-        + str(np.round(seplog(mcmc_results['mdm'][0])[0], 2))
-        + '_{-'+str(np.round(mcmc_results['mdm'][2]
-            * 10**-seplog(mcmc_results['mdm'][0])[1], 2))
-        +'}^{+'+str(np.round(mcmc_results['mdm'][1]
-            * 10**-seplog(mcmc_results['mdm'][0])[1], 2))
-        +'} \ 10^{'+str(seplog(mcmc_results['mdm'][0])[1])+'} \ M_{\odot}$',
-        (0.55, 0.15), xycoords='figure fraction')
+                 + str(np.round(seplog(mcmc_results['mdm'][0])[0], 2))
+                 + '_{-'
+                 +str(np.round(mcmc_results['mdm'][2]
+                               * 10**-seplog(mcmc_results['mdm'][0])[1], 2))
+                 +'}^{+'
+                 +str(np.round(mcmc_results['mdm'][1]
+                               * 10**-seplog(mcmc_results['mdm'][0])[1], 2))
+                 +'} \ 10^{'+str(seplog(mcmc_results['mdm'][0])[1])
+                 +'} \ M_{\odot}$',
+                 (0.55, 0.15), xycoords='figure fraction')
 
-    plt.annotate('$M_{\star}(R_{'+str(int(cosmo.overdensity))+'})='
-        + str(np.round(seplog(mcmc_results['mstars'][0])[0], 2))
-        + '_{-'+str(np.round(mcmc_results['mstars'][2]
-            * 10**-seplog(mcmc_results['mstars'][0])[1], 2))
-        + '}^{+'+str(np.round(mcmc_results['mstars'][1]
-            * 10**-seplog(mcmc_results['mstars'][0])[1], 2))
-        +'} \ 10^{'+str(seplog(mcmc_results['mstars'][0])[1])+'} \ M_{\odot}$',
-        (0.55, 0.1),xycoords='figure fraction')
+    if cluster['count_mstar']==1:
+        plt.annotate('$M_{\star}(R_{'+str(int(cosmo.overdensity))+'})='
+                     + str(np.round(seplog(mcmc_results['mstars'][0])[0], 2))
+                     + '_{-'
+                     + str(np.round(mcmc_results['mstars'][2]
+                                    * 10**-seplog(mcmc_results['mstars'][0])[1], 2))
+                     + '}^{+'
+                     + str(np.round(mcmc_results['mstars'][1]
+                                    * 10**-seplog(mcmc_results['mstars'][0])[1], 2))
+                     + '} \ 10^{'+str(seplog(mcmc_results['mstars'][0])[1])
+                     + '} \ M_{\odot}$',
+                     (0.55, 0.1),xycoords='figure fraction')
 
     plt.annotate('$M_{gas}(R_{'+str(int(cosmo.overdensity))+'})='
-        + str(np.round(seplog(mcmc_results['mgas'][0])[0], 2))
-        + '_{-'+str(np.round(mcmc_results['mgas'][2]
-            * 10**-seplog(mcmc_results['mgas'][0])[1], 2))+'}^{+'
-        + str(np.round(mcmc_results['mgas'][1]
-            * 10**-seplog(mcmc_results['mgas'][0])[1], 2))
-        +'} \ 10^{'+str(seplog(mcmc_results['mgas'][0])[1])+'} \ M_{\odot}$',
-        (0.55, 0.05), xycoords='figure fraction')
+                 + str(np.round(seplog(mcmc_results['mgas'][0])[0], 2))
+                 + '_{-'
+                 + str(np.round(mcmc_results['mgas'][2]
+                               * 10**-seplog(mcmc_results['mgas'][0])[1], 2))
+                 + '}^{+'
+                 + str(np.round(mcmc_results['mgas'][1]
+                                * 10**-seplog(mcmc_results['mgas'][0])[1], 2))
+                 + '} \ 10^{'+str(seplog(mcmc_results['mgas'][0])[1]) 
+                 + '} \ M_{\odot}$',
+                 (0.55, 0.05), xycoords='figure fraction')
 
     return fig2
 
@@ -295,7 +334,7 @@ def plt_densityprof(nemodel, annotations):
 
     if nemodel['type'] == 'double_beta':
 
-        plt.plot(rplot, massmod.doublebetamodel(nemodel['parvals'], rplot),
+        plt.plot(rplot, doublebetamodel(nemodel['parvals'], rplot),
             'r')
 
         if annotations == 1:
@@ -317,7 +356,7 @@ def plt_densityprof(nemodel, annotations):
 
     if nemodel['type'] == 'double_beta_tied':
 
-        plt.plot(rplot, massmod.doublebetamodel_tied(nemodel['parvals'], rplot),
+        plt.plot(rplot, doublebetamodel_tied(nemodel['parvals'], rplot),
             'r')
 
         if annotations == 1:
@@ -355,7 +394,7 @@ def plt_densityprof(nemodel, annotations):
 
     if nemodel['type'] == 'single_beta':
 
-        plt.plot(rplot, massmod.betamodel(nemodel['parvals'], rplot), 'r')
+        plt.plot(rplot, betamodel(nemodel['parvals'], rplot), 'r')
 
         if annotations == 1:
             plt.annotate(r'$n_{e,0}='+str(np.round(nemodel['parvals'][0], decimals=3))+'_{'+str(np.round(nemodel['parmins'][0],decimals=3))+'}^{+'+str(np.round(nemodel['parmaxes'][0],decimals=3))+'}$ cm$^{-3}$',(0.02,0.25),xycoords='axes fraction')
@@ -367,7 +406,7 @@ def plt_densityprof(nemodel, annotations):
 
     if nemodel['type'] == 'cusped_beta':
 
-        plt.plot(rplot, massmod.cuspedbetamodel(nemodel['parvals'], rplot), 'r')
+        plt.plot(rplot, cuspedbetamodel(nemodel['parvals'], rplot), 'r')
 
         if annotations == 1:
             plt.annotate(r'$n_{e,0}='+str(np.round(nemodel['parvals'][0],decimals=3))+'_{'+str(np.round(nemodel['parmins'][0],decimals=3))+'}^{+'+str(np.round(nemodel['parmaxes'][0],decimals=3))+'}$ cm$^{-3}$',(0.02,0.3),xycoords='axes fraction')
@@ -451,9 +490,23 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     '''
     final kT profile with c, rs
     '''
+    if cluster['count_mstar']==1:
+        tfit_arr = fit_temperature.Tmodel_func(ne_data=ne_data, 
+                                               tspec_data=tspec_data, 
+                                               nemodel=nemodel, 
+                                               cluster=cluster,
+                                               c=mcmc_results['c'][0],
+                                               rs=mcmc_results['rs'][0],
+                                               normsersic=mcmc_results['normsersic'][0])
 
-    tfit_arr = massmod.Tmodel_func(mcmc_results['c'][0], mcmc_results['rs'][0],
-         mcmc_results['normsersic'][0], ne_data, tspec_data, nemodel, cluster)
+    elif cluster['count_mstar']==0:
+        tfit_arr = fit_temperature.Tmodel_func(ne_data=ne_data, 
+                                               tspec_data=tspec_data, 
+                                               nemodel=nemodel, 
+                                               cluster=cluster,
+                                               c=mcmc_results['c'][0],
+                                               rs=mcmc_results['rs'][0])
+
 
     ax = fig3.add_subplot(1, 3, 2)
 
@@ -482,15 +535,19 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
 
     xplot = np.logspace(np.log10(1.), np.log10(900.), 100)
 
-    mass_nfw = massmod.nfw_mass_model(xplot,
+    mass_nfw = nfw_mass_model(xplot,
                                       mcmc_results['c'][0],
                                       mcmc_results['rs'][0],
                                       cluster['z']) \
         / uconv.Msun
 
-    mass_dev = massmod.sersic_mass_model(xplot, mcmc_results['normsersic'][0], cluster)  # Msun
+    if cluster['count_mstar']==1:
+        mass_dev = sersic_mass_model(xplot, mcmc_results['normsersic'][0],
+                                     cluster)  # Msun
+    elif cluster['count_mstar']==0:
+        mass_dev=0.
 
-    intfunc = lambda x: massmod.mgas_intmodel(x, nemodel)
+    intfunc = lambda x: mgas_intmodel(x, nemodel)
     mass_gas = []
     for xx in xplot:
         mass_gas.append(scipy.integrate.quad(intfunc, 0, xx)[0])
@@ -499,7 +556,10 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
 
     plt.loglog(xplot, mass_tot, 'r-', label='M$_{\mathrm{tot}}$')
     plt.loglog(xplot, mass_nfw, 'b-', label='M$_{\mathrm{DM}}$')
-    plt.loglog(xplot, mass_dev, 'g-', label='M$_{\star}$')
+
+    if cluster['count_mstar']==1:
+        plt.loglog(xplot, mass_dev, 'g-', label='M$_{\star}$')
+
     plt.loglog(xplot, mass_gas, 'y-', label='M$_{\mathrm{gas}}$')
 
     handles, labels = ax.get_legend_handles_labels()

@@ -1,5 +1,11 @@
+import numpy as np
 
+import defaultparams.params as params
+import scipy
+import defaultparams.uconv as uconv
 
+from density_models import *
+from gen import *
 '''
 Mass models
 '''
@@ -43,7 +49,7 @@ def nfw_mass_model(r, c, rs, z):
     func_x = np.log(1.+x)-(x/(1.+x))  # [unitless]
 
     # characterstic cosmo.overdensity
-    Deltavir = cosmo.overdensity
+    Deltavir = params.overdensity
     delta_char = (Deltavir/3.)*((c**3.)/func_c)  # [unitless]
     # nb: removed OmegaM here because of eq 1 ettori2011
 
@@ -96,6 +102,7 @@ def sersic_mass_model(x, normsersic, cluster):
 
 def mgas_intmodel(x, nemodel):
 
+
     '''
     Create the varialble that needs to be integrated to calculate the gas mass.
     Intended to be used in the form:
@@ -119,8 +126,8 @@ def mgas_intmodel(x, nemodel):
 
     '''
 
-    fac = 4*np.pi*cosmo.mu_e*uconv.mA/uconv.Msun
-    # NB:cosmo.mu_e*uconv.mA changes ne to rho_gas
+    fac = 4*np.pi*params.mu_e*uconv.mA/uconv.Msun
+    # NB:params.mu_e*uconv.mA changes ne to rho_gas
 
     if nemodel['type'] == 'single_beta':
         return fac*(x**2.)*(uconv.cm_kpc**-3.) \
