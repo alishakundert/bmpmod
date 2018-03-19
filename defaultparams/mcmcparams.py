@@ -16,5 +16,5 @@ normsersic_boundmax = 100.
 
 Ncores = 3
 Nwalkers = 30
-Nsamples = 30
+Nsteps = 30
 Nburnin = 10

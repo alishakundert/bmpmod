@@ -33,7 +33,7 @@ Plotting
 '''
 
 
-def plt_mcmc_freeparam(mcmc_results, samples, tspec_data, cluster):
+def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, cluster):
 
     '''
     Make a corner plot from the MCMC posterior distribution of \
@@ -51,15 +51,46 @@ def plt_mcmc_freeparam(mcmc_results, samples, tspec_data, cluster):
     fig1 (plot)
     '''
 
+
+    matplotlib.rcParams['font.size'] = 9
+    matplotlib.rcParams['axes.labelsize'] = 12
+
+    if samples.shape[1]==3:
+        xa=0.7
+    elif samples.shape[1]==2:
+        xa=0.6
+    
     fig1 = corner.corner(samples, labels=["$c$", "$R_s$", r"$\rho_{\star,0,\mathrm{Sersic}}$"])
 
-    plt.annotate('$r_{\mathrm{ref}}$='+str(int(tspec_data['radius'][cluster['refindex']]))+' kpc',(0.7,0.9),xycoords='figure fraction')
+    plt.annotate('Nwalkers, Nsteps = '+str(params.Nwalkers)+', '+str(params.Nsteps),(xa,0.95),xycoords='figure fraction')
+    plt.annotate('Nburnin = '+str(params.Nburnin),(xa,0.9),xycoords='figure fraction')
 
-    plt.annotate(r'$c = '+str(np.round(mcmc_results['c'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['c'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['c'][1],decimals=2))+'}$',(0.7,0.8),xycoords='figure fraction')
-    plt.annotate(r'$R_{s} = '+str(np.round(mcmc_results['rs'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['rs'][2],decimals=1))+'}^{+'+str(np.round(mcmc_results['rs'][1],decimals=1))+'}$ kpc',(0.7,0.75),xycoords='figure fraction')
 
+    plt.annotate('$r_{\mathrm{ref}}$='+str(int(tspec_data['radius'][cluster['refindex']]))+' kpc',(xa,0.8),xycoords='figure fraction')
+
+    plt.annotate(r'$c = '+str(np.round(mcmc_results['c'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['c'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['c'][1],decimals=2))+'}$',(xa,0.75),xycoords='figure fraction')
+    plt.annotate(r'$R_{s} = '+str(np.round(mcmc_results['rs'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['rs'][2],decimals=1))+'}^{+'+str(np.round(mcmc_results['rs'][1],decimals=1))+'}$ kpc',(xa,0.7),xycoords='figure fraction')
+
+    ya=0.7
     if cluster['count_mstar']==1:
-        plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot}]) = '+str(np.round(mcmc_results['normsersic'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['normsersic'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['normsersic'][1],decimals=2))+'}$',(0.7,0.7),xycoords='figure fraction')
+        ya=0.65
+        plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot}]) = '+str(np.round(mcmc_results['normsersic'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['normsersic'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['normsersic'][1],decimals=2))+'}$',(xa,0.65),xycoords='figure fraction')
+
+
+        
+    #print properties of the sampler
+    try:
+        #check autocorrelation time
+        tacor=sampler.acor
+
+        plt.annotate(r'$\tau_{\mathrm{acor}}(c)$='+str(int(np.round(tacor[0],0))),(xa,ya-0.1),xycoords='figure fraction')
+        plt.annotate(r'$\tau_{\mathrm{acor}}(R_s)$='+str(int(np.round(tacor[1],0))),(xa,ya-0.15),xycoords='figure fraction')
+
+        if cluster['count_mstar']==1:
+            plt.annotate(r'$\tau_{\mathrm{acor}}(log(\rho_{\star,0,\mathrm{Sersic}}))$='+str(int(np.round(tacor[2],0))),(xa,ya-0.2),xycoords='figure fraction')
+
+    except RuntimeError:
+        pass
 
     return fig1
 

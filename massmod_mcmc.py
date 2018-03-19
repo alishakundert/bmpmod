@@ -86,7 +86,7 @@ if __name__ == '__main__':
     ind = np.where(FGdat['obsID'] == int(obsID))[0][0]
 
     # IMPORTANT: read in values for re and sersic_n also
-    cluster=set_cluster(name=obsID, z=FGdat['z'][ind], bcg_re=11.82, bcg_sersic_n=2.7, refindex=-1, count_mstar=0)
+    cluster=set_cluster(name=obsID, z=FGdat['z'][ind], bcg_re=11.82, bcg_sersic_n=2.7, refindex=-1, count_mstar=1)
 
 
     # set up cosmology
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     MCMC output
     '''
     # col1: c, col2:rs, col3: normsersic
-    samples = fit_temperature.fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster)
+    samples, sampler = fit_temperature.fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster)
 
 
     # col1: rdelta, col2, mdelta, col3: mnfw, col4: mdev, col5: mgas
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     '''
     Results MCMC - plotting, free params output
     '''
-    fig1 = plt_mcmc_freeparam(mcmc_results, samples, tspec_data, cluster)
+    fig1 = plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, cluster)
 
     '''
     Summary plot
@@ -322,5 +322,5 @@ if __name__ == '__main__':
     #print '/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod_ref'+str(params.refindex)+'.pdf'
     # fig1.savefig('/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod_ref'+str(params.refindex)+'_mcmc.pdf',dpi=300,format='PDF',bbox_inches='tight')
     # fig2.savefig('/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod_ref'+str(params.refindex)+'.pdf',dpi=300,format='PDF',bbox_inches='tight')
-    fig3.savefig('/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod.pdf',dpi=300,format='PDF',bbox_inches='tight')
+    #fig3.savefig('/usr/data/castaway/kundert/obs/'+str(obsID)+'/outplot/'+str(obsID)+'_massmod.pdf',dpi=300,format='PDF',bbox_inches='tight')
 

@@ -23,6 +23,8 @@ from joblib import Parallel, delayed
 from mass_models import *
 from density_models import *
 
+import acor
+
 
 ##############################################################################
 ##############################################################################
@@ -328,7 +330,7 @@ def fit_ml(ne_data, tspec_data, nemodel, cluster,
 def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster,
              Ncores=params.Ncores,
              Nwalkers=params.Nwalkers,
-             Nsamples=params.Nsamples,
+             Nsteps=params.Nsteps,
              Nburnin=params.Nburnin):
 
     '''
@@ -352,7 +354,7 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster,
                 col 1: c
                 col 2: rs
                 col 3: normsersic
-            NB: length of samples array set by Nwalkers * Nsamples
+            NB: length of samples array set by Nwalkers * Nsteps
 
     References:
     -----------
@@ -379,11 +381,30 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster,
                                     threads=Ncores)
     # WHY ARE THE ARGS THE WAY THEY ARE???
 
+    #autocorrelation time
+    #print 'autocorrelation time:' sampler
+
+
+
     # run mcmc for 500 steps
-    sampler.run_mcmc(pos, Nsamples)
+    sampler.run_mcmc(pos, Nsteps)
     samples = sampler.chain[:, Nburnin:, :].reshape((-1, ndim))
     # length of samples = walkers*steps
 
-    return samples
+
+    #check acceptance rate: goal between 0.2-0.5
+    print 'acceptance rate of walkers:'
+    print sampler.acceptance_fraction
+    print ''
+
+    #check autocorrelation time
+    try:
+        print 'autocorrelation time:',sampler.acor
+    except RuntimeError:
+        print 'autocorrelation time is too long'
+    print ''
+
+
+    return samples, sampler
 
 
