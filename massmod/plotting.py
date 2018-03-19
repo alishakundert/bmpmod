@@ -220,21 +220,18 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     mass_nfw = nfw_mass_model(xplot,
                               mcmc_results['c'][0],
                               mcmc_results['rs'][0],
-                              cluster['z']) \
-        / uconv.Msun
+                              cluster['z']) #[Msun]
     
     if cluster['count_mstar']==1:
         mass_dev = sersic_mass_model(xplot, mcmc_results['normsersic'][0],
                                      cluster)  # Msun
+
     elif cluster['count_mstar']==0:
         mass_dev=0.
 
-    intfunc = lambda x: mgas_intmodel(x, nemodel)
-    mass_gas = []
-    for xx in xplot:
-        mass_gas.append(scipy.integrate.quad(intfunc, 0, xx)[0])
+    mass_gas = gas_mass_model(xplot,nemodel) #[Msun]
 
-    mass_tot = mass_nfw+mass_dev+mass_gas
+    mass_tot = mass_nfw+mass_dev+mass_gas #[Msun]
 
     plt.loglog(xplot, mass_tot, 'r-', label='M$_{\mathrm{tot}}$')
     plt.loglog(xplot, mass_nfw, 'b-', label='M$_{\mathrm{DM}}$')
@@ -569,8 +566,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     mass_nfw = nfw_mass_model(xplot,
                                       mcmc_results['c'][0],
                                       mcmc_results['rs'][0],
-                                      cluster['z']) \
-        / uconv.Msun
+                                      cluster['z']) #[Msun]
 
     if cluster['count_mstar']==1:
         mass_dev = sersic_mass_model(xplot, mcmc_results['normsersic'][0],
@@ -578,12 +574,9 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     elif cluster['count_mstar']==0:
         mass_dev=0.
 
-    intfunc = lambda x: mgas_intmodel(x, nemodel)
-    mass_gas = []
-    for xx in xplot:
-        mass_gas.append(scipy.integrate.quad(intfunc, 0, xx)[0])
+    mass_gas = gas_mass_model(xplot,nemodel) #[Msun]
 
-    mass_tot = mass_nfw+mass_dev+mass_gas
+    mass_tot = mass_nfw+mass_dev+mass_gas #[Msun]
 
     plt.loglog(xplot, mass_tot, 'r-', label='M$_{\mathrm{tot}}$')
     plt.loglog(xplot, mass_nfw, 'b-', label='M$_{\mathrm{DM}}$')

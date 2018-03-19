@@ -54,8 +54,8 @@ def nfw_mass_model(r, c, rs, z):
     # nb: removed OmegaM here because of eq 1 ettori2011
 
     # mass profile
-    M = 4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x  # [kg]
-    # M=4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x/uconv.Msun #[Msun]
+    #M = 4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x  # [kg]
+    M=4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x/uconv.Msun #[Msun]
 
     return M
 
@@ -98,49 +98,74 @@ def sersic_mass_model(x, normsersic, cluster):
     return (4*np.pi*(cluster['bcg_re']**3.)*(f**3.)*(10.**normsersic)/nu) \
         * scipy.special.gamma((3-p)/nu) \
         * scipy.special.gammainc((3-p)/nu, (f**-nu)*(x/cluster['bcg_re'])**nu)
+    #[Msun]
+
+######################################################################
+######################################################################
+########################################################################
 
 
-def mgas_intmodel(x, nemodel):
+'''
+gas mass models
+'''
+def gas_mass_model(x,nemodel):
+    
+    #Mgas = \int 4*pi*r^2 rho_gas dr
 
-
-    '''
-    Create the varialble that needs to be integrated to calculate the gas mass.
-    Intended to be used in the form:
-    Mgas = \int mgas_intmodel dr = \int 4 \pi r^2 \rho(r) dr, where \rho(r) is
-    the model desribing the gas mass density
-
-    NOTE: must be used in an integral to actually calcualte the gas mass
-
-    Args:
-    -----
-    x (float OR ARRAY???):  array of radius values
-
-    nemodel_bfp (array): best-fitting paramters of model fit to ne profile
-            accessible with nemodel['parvals'] if using fitne function of this
-            package
-
-
-    Returns:
-    --------
-    model of gas mass to be integrated
-
-    '''
-
-    fac = 4*np.pi*params.mu_e*uconv.mA/uconv.Msun
-    # NB:params.mu_e*uconv.mA changes ne to rho_gas
+    #rho_gas comes from the density model previously fit
 
     if nemodel['type'] == 'single_beta':
-        return fac*(x**2.)*(uconv.cm_kpc**-3.) \
-            * betamodel(nemodel['parvals'], x)  # [Msun kpc2 kpc-3]
 
-    elif nemodel['type'] == 'double_beta':
-        return fac*(x**2.)*(uconv.cm_kpc**-3.) \
-            * doublebetamodel(nemodel['parvals'], x)  # [Msun kpc2 kpc-3]
+        ne0 = nemodel['parvals'][0]  # [cm^-3]
+        rc = nemodel['parvals'][1]  # [kpc]
+        beta = nemodel['parvals'][2]  # [unitless]
 
-    elif nemodel['type'] == 'cusped_beta':
-        return fac*(x**2.)*(uconv.cm_kpc**-3.) \
-            * cuspedbetamodel(nemodel['parvals'], x)  # [Msun kpc2 kpc-3]
 
-    elif nemodel['type'] == 'double_beta_tied':
-        return fac*(x**2.)*(uconv.cm_kpc**-3.) \
-            * doublebetamodel_tied(nemodel['parvals'], x)  # [Msun kpc2 kpc-3]
+        mgas=(4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+            *((ne0*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta, 5./2., -(x/rc)**2.))
+        #[msun]
+
+    if nemodel['type'] == 'cusped_beta':
+
+        ne0 = nemodel['parvals'][0]  # [cm^-3]
+        rc = nemodel['parvals'][1]  # [kpc]
+        beta = nemodel['parvals'][2]  # [unitless]
+        alpha = nemodel['parvals'][3]  # [unitless]
+
+
+        mgas=(-4./(alpha-3.))*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+              * (ne0*(uconv.cm_kpc**-3.))*((x/rc)**-alpha)*scipy.special.hyp2f1((3.-alpha)/2.,(3./2.)*beta, 1.+((3.-alpha)/2.), -(x/rc)**2.)
+        #[msun]
+
+
+    if nemodel['type'] == 'double_beta_tied':
+
+        ne01 = nemodel['parvals'][0]  # [cm^-3]
+        rc1 = nemodel['parvals'][1]  # [kpc]
+        beta1 = nemodel['parvals'][2]  # [unitless]
+
+        ne02 = nemodel['parvals'][3]  # [cm^-3]
+        rc2 = nemodel['parvals'][4]  # [kpc]
+        beta2 = beta1  # TIED TO BETA1!!!!
+
+        mgas=(4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+            *(((ne01*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta1, 5./2., -(x/rc1)**2.)) \
+              +((ne02*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta2, 5./2., -(x/rc2)**2.)))
+        #[msun]
+
+    if nemodel['type'] == 'double_beta':
+
+        ne01 = nemodel['parvals'][0]  # [cm^-3]
+        rc1 = nemodel['parvals'][1]  # [kpc]
+        beta1 = nemodel['parvals'][2]  # [unitless]
+
+        ne02 = nemodel['parvals'][3]  # [cm^-3]
+        rc2 = nemodel['parvals'][4]  # [kpc]
+        beta2 =  nemodel['parvals'][5] 
+
+        mgas=(4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+            *(((ne01*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta1, 5./2., -(x/rc1)**2.)) \
+              +((ne02*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta2, 5./2., -(x/rc2)**2.)))
+        #[msun]
+
+    return mgas

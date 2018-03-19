@@ -52,15 +52,16 @@ def calc_rdelta_p(row, nemodel, cluster):
     # so need a larger radius to get to 500
 
     # calculate mass density at rdelta_dm
-    mass_nfw = nfw_mass_model(rdelta_dm, c, rs, cluster['z'])  # [kg]
+    mass_nfw = nfw_mass_model(rdelta_dm, c, rs, cluster['z'])  # [Msun]
 
     if cluster['count_mstar']==1:
-        mass_dev = sersic_mass_model(rdelta_dm, normsersic, cluster)*uconv.Msun  # [kg]
+        mass_dev = sersic_mass_model(rdelta_dm, normsersic, cluster) # [Msun]
 
-    intfunc = lambda x: mgas_intmodel(rdelta_dm, nemodel)
-    mass_gas = scipy.integrate.quad(intfunc, 0, rdelta_dm)[0]*uconv.Msun  # [kg]
 
-    mass_tot = mass_nfw+mass_dev+mass_gas
+    mass_gas = gas_mass_model(rdelta_dm,nemodel) #[Msun]
+
+
+    mass_tot = (mass_nfw+mass_dev+mass_gas)*(uconv.Msun_kg) #[kg]
 
     rho_crit = calc_rhocrit(cluster['z'])
     ratio = (mass_tot/((4./3.)*np.pi*rdelta_dm**3.))/rho_crit
@@ -72,20 +73,20 @@ def calc_rdelta_p(row, nemodel, cluster):
 
         rdelta_tot += 1
 
-        mass_nfw = nfw_mass_model(rdelta_tot, c, rs, cluster['z'])  # [kg]
+        mass_nfw = nfw_mass_model(rdelta_tot, c, rs, cluster['z'])  # [Msun]
 
         if cluster['count_mstar']==1:
-            mass_dev = sersic_mass_model(rdelta_tot, normsersic, cluster)*uconv.Msun  # [kg]
+            mass_dev = sersic_mass_model(rdelta_tot, normsersic, cluster)  # [Msun]
 
-        intfunc = lambda x: mgas_intmodel(rdelta_tot, nemodel)
-        mass_gas = scipy.integrate.quad(intfunc, 0, rdelta_tot)[0]*uconv.Msun  # [kg]
+        mass_gas = gas_mass_model(rdelta_tot,nemodel) #[Msun]
 
-        mass_tot = mass_nfw+mass_dev+mass_gas
+
+        mass_tot = (mass_nfw+mass_dev+mass_gas)*(uconv.Msun_kg)
 
         rho_crit = calc_rhocrit(cluster['z'])
         ratio = (mass_tot/((4./3.)*np.pi*rdelta_tot**3.))/rho_crit
 
-    return rdelta_tot, mass_tot/uconv.Msun, mass_nfw/uconv.Msun, mass_dev/uconv.Msun, mass_gas/uconv.Msun
+    return rdelta_tot, mass_tot/uconv.Msun, mass_nfw, mass_dev, mass_gas
 
 
 

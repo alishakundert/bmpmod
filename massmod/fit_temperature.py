@@ -60,35 +60,41 @@ def intmodel(nemodel, rs, c, normsersic, r_arr, cluster):
 
     '''
 
+
     if cluster['count_mstar']==0:
         normsersic=0
 
     if nemodel['type'] == 'single_beta':
         return (betamodel(nemodel['parvals'], r_arr)
                 *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
-            * ((nfw_mass_model(r_arr, c, rs, cluster['z'])/uconv.Msun)
-               + sersic_mass_model(r_arr, normsersic, cluster)) \
+            * (nfw_mass_model(r_arr, c, rs, cluster['z'])
+               + sersic_mass_model(r_arr, normsersic, cluster)
+               + gas_mass_model(r_arr,nemodel)) \
+            / (r_arr**2.)
+
+
+    if nemodel['type'] == 'cusped_beta':
+        return (cuspedbetamodel(nemodel['parvals'], r_arr)
+                *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
+            * (nfw_mass_model(r_arr, c, rs, cluster['z'])
+               + sersic_mass_model(r_arr, normsersic, cluster)
+               + gas_mass_model(r_arr,nemodel)) \
             / (r_arr**2.)
 
     if nemodel['type'] == 'double_beta':
         return (doublebetamodel(nemodel['parvals'], r_arr)
                 *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
-            * ((nfw_mass_model(r_arr, c, rs, cluster['z'])/uconv.Msun)
-               +sersic_mass_model(r_arr, normsersic, cluster)) \
-            / (r_arr**2.)
-
-    if nemodel['type'] == 'cusped_beta':
-        return (cuspedbetamodel(nemodel['parvals'], r_arr)
-                *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
-            * ((nfw_mass_model(r_arr, c, rs, cluster['z'])/uconv.Msun)
-               + sersic_mass_model(r_arr, normsersic, cluster)) \
+            * (nfw_mass_model(r_arr, c, rs, cluster['z'])
+               +sersic_mass_model(r_arr, normsersic, cluster)
+               +gas_mass_model(r_arr,nemodel)) \
             / (r_arr**2.)
 
     if nemodel['type'] == 'double_beta_tied':
         return (doublebetamodel_tied(nemodel['parvals'], r_arr)
                 *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
-            * ((nfw_mass_model(r_arr, c, rs, cluster['z'])/uconv.Msun)
-               + sersic_mass_model(r_arr, normsersic, cluster)) \
+            * (nfw_mass_model(r_arr, c, rs, cluster['z'])
+               + sersic_mass_model(r_arr, normsersic, cluster)
+               +gas_mass_model(r_arr,nemodel)) \
             / (r_arr**2.)
 
 
@@ -153,8 +159,8 @@ def Tmodel_func(ne_data, tspec_data, nemodel, cluster,c, rs, normsersic=0):
                     /(ne_selected*(uconv.cm_m**-3.)))  # [m6 kg-1 s-2]
 
         tfit_r = (tspec_ref*ne_ref/ne_selected) \
-            - (uconv.joule_kev*finfac_t*(uconv.Msun_kg**2.)*(uconv.kpc_m**-4.)
-               * scipy.integrate.quad(intfunc, radius_ref, radius_selected)[0])
+                 - (uconv.joule_kev*finfac_t*(uconv.Msun_kg**2.)*(uconv.kpc_m**-4.)
+                    * scipy.integrate.quad(intfunc, radius_ref, radius_selected)[0])
         # [kev]
 
         # print scipy.integrate.quad(intfunc,radius_ref,radius_selected)

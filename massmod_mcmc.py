@@ -65,9 +65,9 @@ def write_ne(nemodel, fn):
             continue
 
         if nemodel['parnames'][ii] == 'rc2':
-            combo += '$'+str(int(np.round(nemodel['parvals'][ii], 0))) \
-                + '_{'+str(int(np.round(nemodel['parmins'][ii], 0))) \
-                + '}^{+'+str(int(np.round(nemodel['parmaxes'][ii], 0)))+'}$'
+            combo += '$'+str(np.round(nemodel['parvals'][ii], 0)) \
+                + '_{'+str(np.round(nemodel['parmins'][ii], 0)) \
+                + '}^{+'+str(np.round(nemodel['parmaxes'][ii], 0))+'}$'
             continue
 
     combo += ' & '+str(np.round(nemodel['chisq'], 1))+'/'+str(nemodel['dof']) \
@@ -237,7 +237,9 @@ if __name__ == '__main__':
 
     # need to generalize this a lot to remove double betamodel
     nemodel = fitne(ne_data=ne_data, tspec_data=tspec_data,
-        nemodeltype='double_beta_tied')  # [cm^-3]
+        nemodeltype='single_beta')  # [cm^-3]
+    #'single_beta','cusped_beta','double_beta','double_beta_tied'
+
 
     # write results as a string to go in a latex table
     latex_combo = write_ne(nemodel, fn='')
