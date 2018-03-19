@@ -28,7 +28,7 @@ import defaultparams.params as params
 from massmod.fit_density import *
 from massmod.posterior_mcmc import *
 
-from massmod.set_prof_data import set_ne, set_tspec, set_cluster
+from massmod.set_prof_data import set_ne, set_tspec, set_meta
 import massmod.fit_temperature as fit_temperature
 from massmod.plotting import *
 
@@ -86,12 +86,18 @@ if __name__ == '__main__':
     ind = np.where(FGdat['obsID'] == int(obsID))[0][0]
 
     # IMPORTANT: read in values for re and sersic_n also
-    cluster=set_cluster(name=obsID, z=FGdat['z'][ind], bcg_re=11.72, bcg_sersic_n=2.6, refindex=-2, count_mstar=1)
+    clustermeta=set_meta(name=obsID, 
+                         z=FGdat['z'][ind], 
+                         bcg_re=11.72, 
+                         bcg_sersic_n=2.6, 
+                         refindex=-2, 
+                         incl_mstar=1, 
+                         incl_mgas=1)
 
 
     # set up cosmology
     astropycosmo = FlatLambdaCDM(H0=params.H0 * u.km/u.s/u.Mpc, Om0=params.OmegaM)
-    skyscale = float(astropycosmo.kpc_proper_per_arcmin(cluster['z'])/60. \
+    skyscale = float(astropycosmo.kpc_proper_per_arcmin(clustermeta['z'])/60. \
         * u.arcmin/u.kpc)  # [kpc/arcsec]
 
     dirpath = '/usr/data/castaway/kundert/obs/'+str(obsID)+'/annuli'
@@ -135,7 +141,7 @@ if __name__ == '__main__':
     norm_el = np.array(-dat['src_norm_el'])
     norm_eu = np.array(dat['src_norm_eu'])
 
-    da_mpc = astropycosmo.angular_diameter_distance(cluster['z']) / u.Mpc
+    da_mpc = astropycosmo.angular_diameter_distance(clustermeta['z']) / u.Mpc
     da_cm = da_mpc*(3.085677581e+24)  # angular diameter distance [cm]
 
     dv = []
@@ -151,11 +157,11 @@ if __name__ == '__main__':
     spec ne
     '''
 
-    ne_spec = np.sqrt(norm*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)
+    ne_spec = np.sqrt(norm*4.*np.pi*((da_cm*(1.+clustermeta['z']))**2.)
         * (10**14.)* (params.ne_over_np/dv_cm))
-    ne_spec_el = np.sqrt(norm_el*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)
+    ne_spec_el = np.sqrt(norm_el*4.*np.pi*((da_cm*(1.+clustermeta['z']))**2.)
         * (10**14.)*(params.ne_over_np/dv_cm))
-    ne_spec_eu = np.sqrt(norm_eu*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)
+    ne_spec_eu = np.sqrt(norm_eu*4.*np.pi*((da_cm*(1.+clustermeta['z']))**2.)
         * (10**14.)*(params.ne_over_np/dv_cm))
     # ne_err=np.sqrt((ne_el**2.)+(ne_eu**2.)) HOW ARE ERRORS COMBINED?
     ne_spec_err = (np.abs(ne_spec_el)+np.abs(ne_spec_eu))/2.
@@ -177,8 +183,8 @@ if __name__ == '__main__':
         pdat['conv'][binind]=conv
 
     ne_sb = np.sqrt(((np.array(pdat['DEPR']))/pdat['conv'])*params.ne_over_np
-        * 4.*np.pi*((da_cm*(1.+cluster['z']))**2.)*(10**14.)*(uconv.kpc_cm**-3.))
-    ne_sb_err = 0.5*np.array(pdat['ERR_DEPR'])*(np.array(pdat['DEPR'])**-0.5)*np.sqrt((1./pdat['conv'])*params.ne_over_np*4.*np.pi*((da_cm*(1.+cluster['z']))**2.)*(10**14.)*(uconv.kpc_cm**-3.)) #simple uncertaintity propagation > write out if you get confused later
+        * 4.*np.pi*((da_cm*(1.+clustermeta['z']))**2.)*(10**14.)*(uconv.kpc_cm**-3.))
+    ne_sb_err = 0.5*np.array(pdat['ERR_DEPR'])*(np.array(pdat['DEPR'])**-0.5)*np.sqrt((1./pdat['conv'])*params.ne_over_np*4.*np.pi*((da_cm*(1.+clustermeta['z']))**2.)*(10**14.)*(uconv.kpc_cm**-3.)) #simple uncertaintity propagation > write out if you get confused later
 
     pdat.add_column(astropy.table.Column(ne_sb_err, name='ERR_NE'))
 
@@ -214,21 +220,19 @@ if __name__ == '__main__':
     '''
     set up data arrays
     '''
-    ne_data = set_ne(
-        radius=pdat['RADIUS'],
-        ne=pdat['DENSITY'],
-        ne_err=pdat['ERR_DENS'],
-        radius_lowerbound=pdat['WIDTH'],
-        radius_upperbound=pdat['WIDTH'])
+    ne_data = set_ne(radius=pdat['RADIUS'],
+                     ne=pdat['DENSITY'],
+                     ne_err=pdat['ERR_DENS'],
+                     radius_lowerbound=pdat['WIDTH'],
+                     radius_upperbound=pdat['WIDTH'])
 
-    tspec_data = set_tspec(
-        radius=r_pos,
-        tspec=dat['src_kT'],
-        tspec_err=tspec_err,
-        tspec_lowerbound=tspec_el,
-        tspec_upperbound=tspec_eu,
-        radius_lowerbound=xerr_pos_l,
-        radius_upperbound=xerr_pos_u)
+    tspec_data = set_tspec(radius=r_pos,
+                           tspec=dat['src_kT'],
+                           tspec_err=tspec_err,
+                           tspec_lowerbound=tspec_el,
+                           tspec_upperbound=tspec_eu,
+                           radius_lowerbound=xerr_pos_l,
+                           radius_upperbound=xerr_pos_u)
 
 
     '''
@@ -236,8 +240,9 @@ if __name__ == '__main__':
     '''
 
     # need to generalize this a lot to remove double betamodel
-    nemodel = fitne(ne_data=ne_data, tspec_data=tspec_data,
-        nemodeltype='single_beta')  # [cm^-3]
+    nemodel = fitne(ne_data=ne_data, 
+                    tspec_data=tspec_data,
+                    nemodeltype='double_beta_tied')  # [cm^-3]
     #'single_beta','cusped_beta','double_beta','double_beta_tied'
 
 
@@ -257,7 +262,10 @@ if __name__ == '__main__':
     Maximum likelihood parameter estimation
     '''
 
-    ml_results = fit_temperature.fit_ml(ne_data, tspec_data, nemodel, cluster)
+    ml_results = fit_temperature.fit_ml(ne_data=ne_data, 
+                                        tspec_data=tspec_data, 
+                                        nemodel=nemodel, 
+                                        clustermeta=clustermeta)
 
     # http://mathworld.wolfram.com/MaximumLikelihood.html, >define own likelihood functoin
 
@@ -266,18 +274,26 @@ if __name__ == '__main__':
     MCMC output
     '''
     # col1: c, col2:rs, col3: normsersic
-    samples, sampler = fit_temperature.fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster)
+    samples, sampler = fit_temperature.fit_mcmc(ne_data=ne_data, 
+                                                tspec_data=tspec_data, 
+                                                nemodel=nemodel, 
+                                                ml_results=ml_results, 
+                                                clustermeta=clustermeta)
 
 
     # col1: rdelta, col2, mdelta, col3: mnfw, col4: mdev, col5: mgas
     # multi-threading using joblib
-    samples_aux = calc_posterior_mcmc(samples=samples, nemodel=nemodel, cluster=cluster)
+    samples_aux = calc_posterior_mcmc(samples=samples, 
+                                      nemodel=nemodel, 
+                                      clustermeta=clustermeta)
 
 
     '''
     Calculate MCMC results
     '''
-    mcmc_results=samples_results(samples,samples_aux,cluster)
+    mcmc_results=samples_results(samples=samples,
+                                 samples_aux=samples_aux,
+                                 clustermeta=clustermeta)
 
 
     ##########################################################################
@@ -291,12 +307,12 @@ if __name__ == '__main__':
     '''
     Results MCMC - plotting, free params output
     '''
-    fig1 = plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, cluster)
+    fig1 = plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, clustermeta)
 
     '''
     Summary plot
     '''
-    fig2 = plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster)
+    fig2 = plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta)
 
     # plotting ne spectral results - just for my data, don't use for examples
     ax = fig2.add_subplot(2, 2, 1)
@@ -307,7 +323,7 @@ if __name__ == '__main__':
     '''
     to go in paper
     '''
-    fig3 = plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster)
+    fig3 = plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta)
 
     ax = fig3.add_subplot(1, 3, 1)
     plt.loglog(r_pos, ne_spec, 'bo')

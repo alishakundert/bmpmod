@@ -33,7 +33,7 @@ Plotting
 '''
 
 
-def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, cluster):
+def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, clustermeta):
 
     '''
     Make a corner plot from the MCMC posterior distribution of \
@@ -66,15 +66,15 @@ def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, cluster):
     plt.annotate('Nburnin = '+str(params.Nburnin),(xa,0.9),xycoords='figure fraction')
 
 
-    plt.annotate('$r_{\mathrm{ref}}$='+str(int(tspec_data['radius'][cluster['refindex']]))+' kpc',(xa,0.8),xycoords='figure fraction')
+    plt.annotate('$r_{\mathrm{ref}}$='+str(int(tspec_data['radius'][clustermeta['refindex']]))+' kpc',(xa,0.8),xycoords='figure fraction')
 
     plt.annotate(r'$c = '+str(np.round(mcmc_results['c'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['c'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['c'][1],decimals=2))+'}$',(xa,0.75),xycoords='figure fraction')
     plt.annotate(r'$R_{s} = '+str(np.round(mcmc_results['rs'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['rs'][2],decimals=1))+'}^{+'+str(np.round(mcmc_results['rs'][1],decimals=1))+'}$ kpc',(xa,0.7),xycoords='figure fraction')
 
     ya=0.7
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         ya=0.65
-        plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot}]) = '+str(np.round(mcmc_results['normsersic'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['normsersic'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['normsersic'][1],decimals=2))+'}$',(xa,0.65),xycoords='figure fraction')
+        plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot} kpc^{-3}]) = '+str(np.round(mcmc_results['normsersic'][0],decimals=1))+'_{-'+str(np.round(mcmc_results['normsersic'][2],decimals=2))+'}^{+'+str(np.round(mcmc_results['normsersic'][1],decimals=2))+'}$',(xa,0.65),xycoords='figure fraction')
 
 
         
@@ -86,7 +86,7 @@ def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, cluster):
         plt.annotate(r'$\tau_{\mathrm{acor}}(c)$='+str(int(np.round(tacor[0],0))),(xa,ya-0.1),xycoords='figure fraction')
         plt.annotate(r'$\tau_{\mathrm{acor}}(R_s)$='+str(int(np.round(tacor[1],0))),(xa,ya-0.15),xycoords='figure fraction')
 
-        if cluster['count_mstar']==1:
+        if clustermeta['incl_mstar']==1:
             plt.annotate(r'$\tau_{\mathrm{acor}}(log(\rho_{\star,0,\mathrm{Sersic}}))$='+str(int(np.round(tacor[2],0))),(xa,ya-0.2),xycoords='figure fraction')
 
     except RuntimeError:
@@ -100,7 +100,7 @@ def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, cluster):
 ###########################################################################
 
 
-def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
+def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 
     '''
     Make a summary plot containing the gas density profile, temperature
@@ -127,7 +127,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
             density profile
          subfig 2: plot of observed temperature profile and model temperature
             profile
-         subfig 3: mass profile of cluster - includes total and components of
+         subfig 3: mass profile of clustermeta - includes total and components of
             DM, stars, gas
     '''
 
@@ -165,20 +165,20 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     final kT profile with c, rs
     '''
 
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         tfit_arr = fit_temperature.Tmodel_func(ne_data=ne_data, 
                                                tspec_data=tspec_data, 
                                                nemodel=nemodel, 
-                                               cluster=cluster,
+                                               clustermeta=clustermeta,
                                                c=mcmc_results['c'][0],
                                                rs=mcmc_results['rs'][0],
                                                normsersic=mcmc_results['normsersic'][0])
 
-    elif cluster['count_mstar']==0:
+    elif clustermeta['incl_mstar']==0:
         tfit_arr = fit_temperature.Tmodel_func(ne_data=ne_data, 
                                                tspec_data=tspec_data, 
                                                nemodel=nemodel, 
-                                               cluster=cluster,
+                                               clustermeta=clustermeta,
                                                c=mcmc_results['c'][0],
                                                rs=mcmc_results['rs'][0])
 
@@ -199,7 +199,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     plt.ylabel('kT [keV]')
 
     plt.annotate('$r_{\mathrm{ref}}$='
-                 + str(int(tspec_data['radius'][cluster['refindex']]))
+                 + str(int(tspec_data['radius'][clustermeta['refindex']]))
                  + ' kpc', (0.05,0.9), xycoords='axes fraction')
 
     plt.ylim(ymin=0)
@@ -217,29 +217,32 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
 
     xplot = np.logspace(np.log10(1.), np.log10(900.), 100)
 
+
     mass_nfw = nfw_mass_model(xplot,
                               mcmc_results['c'][0],
                               mcmc_results['rs'][0],
-                              cluster['z']) #[Msun]
-    
-    if cluster['count_mstar']==1:
-        mass_dev = sersic_mass_model(xplot, mcmc_results['normsersic'][0],
-                                     cluster)  # Msun
+                              clustermeta['z']) #[Msun]
 
-    elif cluster['count_mstar']==0:
-        mass_dev=0.
+    mass_tot = np.copy(mass_nfw)
+    if clustermeta['incl_mstar']==1:
+        mass_sersic = sersic_mass_model(xplot, mcmc_results['normsersic'][0],
+                                        clustermeta)  # Msun
+        mass_tot += mass_sersic
 
-    mass_gas = gas_mass_model(xplot,nemodel) #[Msun]
+    if clustermeta['incl_mgas']==1:
+        mass_gas = gas_mass_model(xplot,nemodel) #[Msun]
+        mass_tot+=mass_gas
 
-    mass_tot = mass_nfw+mass_dev+mass_gas #[Msun]
 
     plt.loglog(xplot, mass_tot, 'r-', label='M$_{\mathrm{tot}}$')
     plt.loglog(xplot, mass_nfw, 'b-', label='M$_{\mathrm{DM}}$')
 
-    if cluster['count_mstar']==1:
-        plt.loglog(xplot, mass_dev, 'g-', label='M$_{\star}$')
+    if clustermeta['incl_mstar']==1:
+        plt.loglog(xplot, mass_sersic, 'g-', label='M$_{\star}$')
 
-    plt.loglog(xplot, mass_gas, 'y-', label='M$_{\mathrm{gas}}$')
+    if clustermeta['incl_mgas']==1:
+        plt.loglog(xplot, mass_gas, 'y-', label='M$_{\mathrm{gas}}$')
+
 
     handles, labels = ax.get_legend_handles_labels()
     plt.legend(handles, labels, loc=2)
@@ -262,18 +265,18 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
         + '}^{+'+str(np.round(mcmc_results['rs'][1], 1))+'}$ kpc',
         (0.55, 0.4), xycoords='figure fraction')
 
-    if cluster['count_mstar']==1:
-        plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot}]) = '
+    if clustermeta['incl_mstar']==1:
+        plt.annotate(r'$log(\rho_{\star,0,\mathrm{Sersic}} [M_{\odot} kpc^{-3}]) = '
                      + str(np.round(mcmc_results['normsersic'][0], 1))
                      + '_{-'+str(np.round(mcmc_results['normsersic'][2], 2))
                      + '}^{+'+str(np.round(mcmc_results['normsersic'][1], 2))
                      +'}$',
                      (0.55, 0.35), xycoords='figure fraction')
 
-        plt.annotate(r'$R_{eff}=$'+str(cluster['bcg_re'])+' kpc',
+        plt.annotate(r'$R_{eff}=$'+str(clustermeta['bcg_re'])+' kpc',
                      (0.8, 0.45), xycoords='figure fraction')
 
-        plt.annotate(r'$n_{\mathrm{Sersic}}$='+str(cluster['bcg_sersic_n']),
+        plt.annotate(r'$n_{\mathrm{Sersic}}$='+str(clustermeta['bcg_sersic_n']),
                      (0.8, 0.4), xycoords='figure fraction')
 
     plt.annotate('$R_{'+str(int(cosmo.overdensity))+'}='
@@ -307,7 +310,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
                  +'} \ M_{\odot}$',
                  (0.55, 0.15), xycoords='figure fraction')
 
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         plt.annotate('$M_{\star}(R_{'+str(int(cosmo.overdensity))+'})='
                      + str(np.round(seplog(mcmc_results['mstars'][0])[0], 2))
                      + '_{-'
@@ -320,18 +323,19 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, cluster):
                      + '} \ M_{\odot}$',
                      (0.55, 0.1),xycoords='figure fraction')
 
-    plt.annotate('$M_{gas}(R_{'+str(int(cosmo.overdensity))+'})='
-                 + str(np.round(seplog(mcmc_results['mgas'][0])[0], 2))
-                 + '_{-'
-                 + str(np.round(mcmc_results['mgas'][2]
-                               * 10**-seplog(mcmc_results['mgas'][0])[1], 2))
-                 + '}^{+'
-                 + str(np.round(mcmc_results['mgas'][1]
-                                * 10**-seplog(mcmc_results['mgas'][0])[1], 2))
-                 + '} \ 10^{'+str(seplog(mcmc_results['mgas'][0])[1]) 
-                 + '} \ M_{\odot}$',
-                 (0.55, 0.05), xycoords='figure fraction')
-
+    if clustermeta['incl_mgas']==1:
+        plt.annotate('$M_{gas}(R_{'+str(int(cosmo.overdensity))+'})='
+                     + str(np.round(seplog(mcmc_results['mgas'][0])[0], 2))
+                     + '_{-'
+                     + str(np.round(mcmc_results['mgas'][2]
+                                    * 10**-seplog(mcmc_results['mgas'][0])[1], 2))
+                     + '}^{+'
+                     + str(np.round(mcmc_results['mgas'][1]
+                                    * 10**-seplog(mcmc_results['mgas'][0])[1], 2))
+                     + '} \ 10^{'+str(seplog(mcmc_results['mgas'][0])[1]) 
+                     + '} \ M_{\odot}$',
+                     (0.55, 0.05), xycoords='figure fraction')
+        
     return fig2
 
 #############################################################################
@@ -452,7 +456,7 @@ def plt_densityprof(nemodel, annotations):
 ###########################################################################
 
 
-def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
+def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 
     '''
     Make a summary plot containing the gas density profile, temperature
@@ -481,7 +485,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
              profile
          subfig 2: plot of observed temperature profile and model temperature
              profile
-         subfig 3: mass profile of cluster - includes total and components of
+         subfig 3: mass profile of clustermeta - includes total and components of
              DM, stars, gas
     '''
 
@@ -518,20 +522,20 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     '''
     final kT profile with c, rs
     '''
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         tfit_arr = fit_temperature.Tmodel_func(ne_data=ne_data, 
                                                tspec_data=tspec_data, 
                                                nemodel=nemodel, 
-                                               cluster=cluster,
+                                               clustermeta=clustermeta,
                                                c=mcmc_results['c'][0],
                                                rs=mcmc_results['rs'][0],
                                                normsersic=mcmc_results['normsersic'][0])
 
-    elif cluster['count_mstar']==0:
+    elif clustermeta['incl_mstar']==0:
         tfit_arr = fit_temperature.Tmodel_func(ne_data=ne_data, 
                                                tspec_data=tspec_data, 
                                                nemodel=nemodel, 
-                                               cluster=cluster,
+                                               clustermeta=clustermeta,
                                                c=mcmc_results['c'][0],
                                                rs=mcmc_results['rs'][0])
 
@@ -564,27 +568,29 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, cluster):
     xplot = np.logspace(np.log10(1.), np.log10(900.), 100)
 
     mass_nfw = nfw_mass_model(xplot,
-                                      mcmc_results['c'][0],
-                                      mcmc_results['rs'][0],
-                                      cluster['z']) #[Msun]
+                              mcmc_results['c'][0],
+                              mcmc_results['rs'][0],
+                              clustermeta['z']) #[Msun]
 
-    if cluster['count_mstar']==1:
-        mass_dev = sersic_mass_model(xplot, mcmc_results['normsersic'][0],
-                                     cluster)  # Msun
-    elif cluster['count_mstar']==0:
-        mass_dev=0.
+    mass_tot = np.copy(mass_nfw)
+    if clustermeta['incl_mstar']==1:
+        mass_sersic = sersic_mass_model(xplot, mcmc_results['normsersic'][0],
+                                        clustermeta)  # Msun
+        mass_tot += mass_sersic
 
-    mass_gas = gas_mass_model(xplot,nemodel) #[Msun]
-
-    mass_tot = mass_nfw+mass_dev+mass_gas #[Msun]
+    if clustermeta['incl_mgas']==1:
+        mass_gas = gas_mass_model(xplot,nemodel) #[Msun]
+        mass_tot+=mass_gas
 
     plt.loglog(xplot, mass_tot, 'r-', label='M$_{\mathrm{tot}}$')
     plt.loglog(xplot, mass_nfw, 'b-', label='M$_{\mathrm{DM}}$')
 
-    if cluster['count_mstar']==1:
-        plt.loglog(xplot, mass_dev, 'g-', label='M$_{\star}$')
+    if clustermeta['incl_mstar']==1:
+        plt.loglog(xplot, mass_sersic, 'g-', label='M$_{\star}$')
 
-    plt.loglog(xplot, mass_gas, 'y-', label='M$_{\mathrm{gas}}$')
+    if clustermeta['incl_mgas']==1:
+        plt.loglog(xplot, mass_gas, 'y-', label='M$_{\mathrm{gas}}$')
+
 
     handles, labels = ax.get_legend_handles_labels()
     plt.legend(handles, labels, loc=2)

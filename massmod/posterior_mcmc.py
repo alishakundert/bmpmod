@@ -8,7 +8,7 @@ from gen import *
 import scipy
 import scipy.integrate
 
-def calc_rdelta_p(row, nemodel, cluster):
+def calc_rdelta_p(row, nemodel, clustermeta):
 
     '''
     Radius corresponding to the input overdensity,
@@ -39,11 +39,9 @@ def calc_rdelta_p(row, nemodel, cluster):
 
     c = row[0]
     rs = row[1]
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         normsersic = row[2]
-    elif cluster['count_mstar']==0:
-        normsersic=0.
-        mass_dev = 0.
+
 
     # rdelta(dm only first)
     rdelta_dm = c*rs
@@ -51,20 +49,23 @@ def calc_rdelta_p(row, nemodel, cluster):
     # within this radius the total mass density will be >500*cosmo.rho_crit,
     # so need a larger radius to get to 500
 
+    mass_nfw=nfw_mass_model(rdelta_dm, c, rs, clustermeta['z'])  # [Msun]
+    mass_sersic=0
+    mass_gas=0
+
     # calculate mass density at rdelta_dm
-    mass_nfw = nfw_mass_model(rdelta_dm, c, rs, cluster['z'])  # [Msun]
+    Mtot = mass_nfw
+    if clustermeta['incl_mstar']==1:
+        mass_sersic=sersic_mass_model(rdelta_dm, normsersic, clustermeta) # [Msun]
+        Mtot+=mass_sersic
+    if clustermeta['incl_mgas']==1:
+        mass_gas=gas_mass_model(rdelta_dm,nemodel) #[Msun]
+        Mtot += mass_gas
 
-    if cluster['count_mstar']==1:
-        mass_dev = sersic_mass_model(rdelta_dm, normsersic, cluster) # [Msun]
+    Mtot = Mtot*(uconv.Msun_kg) #[kg]
 
-
-    mass_gas = gas_mass_model(rdelta_dm,nemodel) #[Msun]
-
-
-    mass_tot = (mass_nfw+mass_dev+mass_gas)*(uconv.Msun_kg) #[kg]
-
-    rho_crit = calc_rhocrit(cluster['z'])
-    ratio = (mass_tot/((4./3.)*np.pi*rdelta_dm**3.))/rho_crit
+    rho_crit = calc_rhocrit(clustermeta['z'])
+    ratio = (Mtot/((4./3.)*np.pi*rdelta_dm**3.))/rho_crit
 
 
     # now let's step forward to find true rdelta(total mass)
@@ -73,29 +74,33 @@ def calc_rdelta_p(row, nemodel, cluster):
 
         rdelta_tot += 1
 
-        mass_nfw = nfw_mass_model(rdelta_tot, c, rs, cluster['z'])  # [Msun]
+        mass_nfw=nfw_mass_model(rdelta_tot, c, rs, clustermeta['z'])  # [Msun]
+        mass_sersic=0
+        mass_gas=0
 
-        if cluster['count_mstar']==1:
-            mass_dev = sersic_mass_model(rdelta_tot, normsersic, cluster)  # [Msun]
+        Mtot = mass_nfw
+        if clustermeta['incl_mstar']==1:
+            mass_sersic=sersic_mass_model(rdelta_tot, normsersic, clustermeta)  # [Msun]
+            Mtot+= mass_sersic
+        if clustermeta['incl_mgas']==1:
+            mass_gas=gas_mass_model(rdelta_tot,nemodel) #[Msun]
+            Mtot += mass_gas
 
-        mass_gas = gas_mass_model(rdelta_tot,nemodel) #[Msun]
+        Mtot = Mtot*(uconv.Msun_kg) #[kg]
 
+        rho_crit = calc_rhocrit(clustermeta['z'])
+        ratio = (Mtot/((4./3.)*np.pi*rdelta_tot**3.))/rho_crit
 
-        mass_tot = (mass_nfw+mass_dev+mass_gas)*(uconv.Msun_kg)
-
-        rho_crit = calc_rhocrit(cluster['z'])
-        ratio = (mass_tot/((4./3.)*np.pi*rdelta_tot**3.))/rho_crit
-
-    return rdelta_tot, mass_tot/uconv.Msun, mass_nfw, mass_dev, mass_gas
+    return rdelta_tot, Mtot/uconv.Msun, mass_nfw, mass_sersic, mass_gas
 
 
 
-def calc_posterior_mcmc(samples, nemodel, cluster, Ncores=params.Ncores):
+def calc_posterior_mcmc(samples, nemodel, clustermeta, Ncores=params.Ncores):
 
     '''
     Calculate the radius corresponding to the given overdensity i.e. the radius
      corresponding to a mean overdensity that is some factor times the critical
-     densiy at the redshift of the cluster. Within this radius, calculate the
+     densiy at the redshift of the clustermeta. Within this radius, calculate the
      total mass, DM mass, stellar mass, gas mass.
 
 
@@ -130,19 +135,19 @@ def calc_posterior_mcmc(samples, nemodel, cluster, Ncores=params.Ncores):
     '''
 
     samples_aux = Parallel(n_jobs=Ncores)(
-        delayed(calc_rdelta_p)(row, nemodel, cluster) for row in samples)
+        delayed(calc_rdelta_p)(row, nemodel, clustermeta) for row in samples)
 
     return np.array(samples_aux)
 
 
 
 
-def samples_results(samples,samples_aux,cluster):
+def samples_results(samples,samples_aux,clustermeta):
 
 
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         c_mcmc, rs_mcmc, normsersic_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),zip(*np.percentile(samples, [16, 50, 84],axis=0)))
-    elif cluster['count_mstar']==0:
+    elif clustermeta['incl_mstar']==0:
         c_mcmc, rs_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),zip(*np.percentile(samples, [16, 50, 84],axis=0)))
 
     rdelta_mcmc, mdelta_mcmc, mdm_mcmc, mstars_mcmc, mgas_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),zip(*np.percentile(samples_aux, [16, 50, 84],axis=0)))
@@ -150,7 +155,7 @@ def samples_results(samples,samples_aux,cluster):
     print 'MCMC results'
     print 'MCMC: c=' ,c_mcmc
     print 'MCMC: rs=', rs_mcmc
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         print 'MCMC: normsersic=', normsersic_mcmc
 
 
@@ -162,7 +167,7 @@ def samples_results(samples,samples_aux,cluster):
     mcmc_results['mdm']=mdm_mcmc
     mcmc_results['mgas']=mgas_mcmc
     
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         mcmc_results['normsersic']=normsersic_mcmc
         mcmc_results['mstars']=mstars_mcmc
  

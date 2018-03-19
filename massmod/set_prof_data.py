@@ -62,21 +62,22 @@ def set_tspec(radius, tspec, tspec_err, tspec_lowerbound=None,
     return tspec_data
 
 
-def set_cluster(name, z, bcg_re=0, bcg_sersic_n=0, refindex=-1, count_mstar=0):
+def set_meta(name, z, bcg_re=0, bcg_sersic_n=0, refindex=-1, incl_mstar=0, incl_mgas=0):
 
-    cluster = {}
-    cluster['name'] = name
-    cluster['z'] = z
-    cluster['refindex'] = refindex
-    cluster['count_mstar'] = count_mstar
+    clustermeta = {}
+    clustermeta['name'] = name
+    clustermeta['z'] = z
+    clustermeta['refindex'] = refindex
+    clustermeta['incl_mstar'] = incl_mstar
+    clustermeta['incl_mgas'] = incl_mgas
     
-    cluster['bcg_re'] = bcg_re
-    cluster['bcg_sersic_n'] = bcg_sersic_n
+    clustermeta['bcg_re'] = bcg_re
+    clustermeta['bcg_sersic_n'] = bcg_sersic_n
 
 
-    if (count_mstar==1)&((bcg_re==0)|(bcg_sersic_n==0)):
+    if (incl_mstar==1)&((bcg_re==0)|(bcg_sersic_n==0)):
         print 'Re and n of BCG required to count mstar contribution'
         exit()
 
 
-    return cluster
+    return clustermeta

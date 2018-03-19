@@ -133,7 +133,7 @@ def gas_mass_model(x,nemodel):
         alpha = nemodel['parvals'][3]  # [unitless]
 
 
-        mgas=(-4./(alpha-3.))*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+        mgas=(4./(3.-alpha))*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
               * (ne0*(uconv.cm_kpc**-3.))*((x/rc)**-alpha)*scipy.special.hyp2f1((3.-alpha)/2.,(3./2.)*beta, 1.+((3.-alpha)/2.), -(x/rc)**2.)
         #[msun]
 

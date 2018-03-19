@@ -36,7 +36,7 @@ Integration models for total gravitating mass in T(r)
 '''
 
 
-def intmodel(nemodel, rs, c, normsersic, r_arr, cluster):
+def intmodel(nemodel, rs, c, normsersic, r_arr, clustermeta):
 
     '''
 
@@ -60,41 +60,35 @@ def intmodel(nemodel, rs, c, normsersic, r_arr, cluster):
 
     '''
 
-
-    if cluster['count_mstar']==0:
-        normsersic=0
+    Mtot = nfw_mass_model(r_arr, c, rs, clustermeta['z'])
+    if clustermeta['incl_mstar']==1:
+        Mtot+=sersic_mass_model(r_arr, normsersic, clustermeta)
+    if clustermeta['incl_mgas']==1:
+        Mtot+=gas_mass_model(r_arr,nemodel)
 
     if nemodel['type'] == 'single_beta':
         return (betamodel(nemodel['parvals'], r_arr)
                 *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
-            * (nfw_mass_model(r_arr, c, rs, cluster['z'])
-               + sersic_mass_model(r_arr, normsersic, cluster)
-               + gas_mass_model(r_arr,nemodel)) \
+            * (Mtot) \
             / (r_arr**2.)
 
 
     if nemodel['type'] == 'cusped_beta':
         return (cuspedbetamodel(nemodel['parvals'], r_arr)
                 *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
-            * (nfw_mass_model(r_arr, c, rs, cluster['z'])
-               + sersic_mass_model(r_arr, normsersic, cluster)
-               + gas_mass_model(r_arr,nemodel)) \
+            * (Mtot) \
             / (r_arr**2.)
 
     if nemodel['type'] == 'double_beta':
         return (doublebetamodel(nemodel['parvals'], r_arr)
                 *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
-            * (nfw_mass_model(r_arr, c, rs, cluster['z'])
-               +sersic_mass_model(r_arr, normsersic, cluster)
-               +gas_mass_model(r_arr,nemodel)) \
+            * (Mtot) \
             / (r_arr**2.)
 
     if nemodel['type'] == 'double_beta_tied':
         return (doublebetamodel_tied(nemodel['parvals'], r_arr)
                 *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
-            * (nfw_mass_model(r_arr, c, rs, cluster['z'])
-               + sersic_mass_model(r_arr, normsersic, cluster)
-               +gas_mass_model(r_arr,nemodel)) \
+            * (Mtot) \
             / (r_arr**2.)
 
 
@@ -103,7 +97,7 @@ def intmodel(nemodel, rs, c, normsersic, r_arr, cluster):
 ##############################################################################
 
 
-def Tmodel_func(ne_data, tspec_data, nemodel, cluster,c, rs, normsersic=0):
+def Tmodel_func(ne_data, tspec_data, nemodel, clustermeta,c, rs, normsersic=0):
 
     '''
     Calculates the non-parameteric model fit to the observed temperature
@@ -132,16 +126,16 @@ def Tmodel_func(ne_data, tspec_data, nemodel, cluster,c, rs, normsersic=0):
 
     # return Tmodel given param vals
 
-    ne_ref = nemodel['nefit'][cluster['refindex']]
-    tspec_ref = tspec_data['tspec'][cluster['refindex']]
+    ne_ref = nemodel['nefit'][clustermeta['refindex']]
+    tspec_ref = tspec_data['tspec'][clustermeta['refindex']]
 
-    radius_ref = tspec_data['radius'][cluster['refindex']]
+    radius_ref = tspec_data['radius'][clustermeta['refindex']]
 
     tfit_arr = []  # to hold array of fit temperature
     # iterate over all radii values in profile
     for rr in range(0, len(tspec_data)):
 
-        if rr == cluster['refindex']:
+        if rr == clustermeta['refindex']:
             tfit_arr.append(tspec_data['tspec'][rr])
             continue
 
@@ -153,7 +147,7 @@ def Tmodel_func(ne_data, tspec_data, nemodel, cluster,c, rs, normsersic=0):
                                      c=c,
                                      normsersic=normsersic,
                                      r_arr=x,
-                                     cluster=cluster)
+                                     clustermeta=clustermeta)
 
         finfac_t = ((params.mu*uconv.mA*uconv.G)
                     /(ne_selected*(uconv.cm_m**-3.)))  # [m6 kg-1 s-2]
@@ -184,7 +178,7 @@ MCMC
 
 
 # define the log likelihood function, here assumes normal distribution
-def lnlike(theta, x, y, yerr, ne_data, tspec_data, nemodel, cluster):
+def lnlike(theta, x, y, yerr, ne_data, tspec_data, nemodel, clustermeta):
     '''
     Log(likelihood function) comparing observed and model temperature
         profile values.
@@ -207,13 +201,13 @@ def lnlike(theta, x, y, yerr, ne_data, tspec_data, nemodel, cluster):
 
     '''
 
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         c, rs, normsersic = theta
-    else:
+    elif clustermeta['incl_mstar']==0:
         c, rs = theta
-        normsersic=0.
+        normsersic = 0 
 
-    model = Tmodel_func(ne_data=ne_data, tspec_data=tspec_data, nemodel=nemodel, cluster=cluster,c=c, rs=rs, normsersic=normsersic)
+    model = Tmodel_func(ne_data=ne_data, tspec_data=tspec_data, nemodel=nemodel, clustermeta=clustermeta,c=c, rs=rs, normsersic=normsersic)
 
     inv_sigma2 = 1.0/(yerr**2)  # CHECK THIS!!!
     return -0.5*(np.sum((y-model)**2*inv_sigma2 - np.log(inv_sigma2)))
@@ -254,15 +248,15 @@ def lnprior(theta,
 
 
 # full-log probability function
-def lnprob(theta, x, y, yerr, ne_data, tspec_data, nemodel, cluster):
+def lnprob(theta, x, y, yerr, ne_data, tspec_data, nemodel, clustermeta):
     lp = lnprior(theta)
     if not np.isfinite(lp):
         return -np.inf
     return lp + lnlike(theta, x, y, yerr, ne_data, tspec_data, nemodel,
-                       cluster)
+                       clustermeta)
 
 
-def fit_ml(ne_data, tspec_data, nemodel, cluster,
+def fit_ml(ne_data, tspec_data, nemodel, clustermeta,
            c_guess=params.c_guess,
            c_boundmin=params.c_boundmin,
            c_boundmax=params.c_boundmax,
@@ -297,12 +291,12 @@ def fit_ml(ne_data, tspec_data, nemodel, cluster,
     nll = lambda *args: -lnlike(*args)
 
 
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
 
         result = op.minimize(nll, [c_guess, rs_guess, normsersic_guess],
                              args=(tspec_data['radius'], tspec_data['tspec'],
                                    tspec_data['tspec_err'], ne_data, tspec_data,
-                                   nemodel, cluster),
+                                   nemodel, clustermeta),
                              bounds=((c_boundmin, c_boundmax),
                                      (rs_boundmin, rs_boundmax),
                                      (normsersic_boundmin, normsersic_boundmax)))
@@ -316,11 +310,11 @@ def fit_ml(ne_data, tspec_data, nemodel, cluster,
         return [c_ml, rs_ml, normsersic_ml]
 
 
-    elif cluster['count_mstar']==0:
+    elif clustermeta['incl_mstar']==0:
         result = op.minimize(nll, [c_guess, rs_guess],
                              args=(tspec_data['radius'], tspec_data['tspec'],
                                    tspec_data['tspec_err'], ne_data, tspec_data,
-                                   nemodel, cluster),
+                                   nemodel, clustermeta),
                              bounds=((c_boundmin, c_boundmax),
                                      (rs_boundmin, rs_boundmax)))
         
@@ -333,7 +327,7 @@ def fit_ml(ne_data, tspec_data, nemodel, cluster,
 
 
 
-def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster,
+def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
              Ncores=params.Ncores,
              Nwalkers=params.Nwalkers,
              Nsteps=params.Nsteps,
@@ -370,9 +364,9 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster,
 
     # initialize walkers - result comes from ML fit before
 
-    if cluster['count_mstar']==1:
+    if clustermeta['incl_mstar']==1:
         ndim, nwalkers = 3, Nwalkers
-    elif cluster['count_mstar']==0:
+    elif clustermeta['incl_mstar']==0:
         ndim, nwalkers = 2, Nwalkers
 
     pos = [ml_results + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
@@ -383,7 +377,7 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster,
                                           tspec_data['tspec'],
                                           tspec_data['tspec_err'],
                                           ne_data,
-                                          tspec_data, nemodel, cluster),
+                                          tspec_data, nemodel, clustermeta),
                                     threads=Ncores)
     # WHY ARE THE ARGS THE WAY THEY ARE???
 
