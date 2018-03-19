@@ -109,8 +109,10 @@ def doublebetamodel(pars, x):
     rc2 = pars[4]  # [kpc]
     beta2 = pars[5]  # [unitless]
 
-    return (((ne01**2.) * ((1.+((x/rc1)**2.))**(-3.*beta1)))
-            + ((ne02**2.) * ((1.+((x/rc2)**2.))**(-3.*beta2))))**0.5
+#    return (((ne01**2.) * ((1.+((x/rc1)**2.))**(-3.*beta1)))
+#            + ((ne02**2.) * ((1.+((x/rc2)**2.))**(-3.*beta2))))**0.5
+
+    return (ne01 * ((1.+((x/rc1)**2.))**(-3.*beta1/2.))) + (ne02 * ((1.+((x/rc2)**2.))**(-3.*beta2/2.)))
 
 
 def doublebetamodel_tied(pars, x):
@@ -152,5 +154,7 @@ def doublebetamodel_tied(pars, x):
     rc2 = pars[4]  # [kpc]
     beta2 = beta1  # TIED TO BETA1!!!!
 
-    return (((ne01**2.) * ((1.+((x/rc1)**2.))**(-3.*beta1)))
-            + ((ne02**2.) * ((1.+((x/rc2)**2.))**(-3.*beta2))))**0.5
+#    return (((ne01**2.) * ((1.+((x/rc1)**2.))**(-3.*beta1)))
+#            + ((ne02**2.) * ((1.+((x/rc2)**2.))**(-3.*beta2))))**0.5
+
+    return (ne01 * ((1.+((x/rc1)**2.))**(-3.*beta1/2.))) + (ne02 * ((1.+((x/rc2)**2.))**(-3.*beta2/2.)))

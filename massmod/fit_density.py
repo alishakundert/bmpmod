@@ -120,6 +120,34 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
                    max=1.)
 
 
+    if nemodeltype == 'cusped_beta':
+
+        # param estimate
+        betaguess = 0.7
+        rcguess = 5.  # [kpc]
+        ne0guess = max(ne_data['ne'])
+        alphaguess = 10.  # ????
+
+        # beta model
+        ui.load_user_model(cuspedbetamodel, "cuspedbeta1d")
+        ui.add_user_pars("cuspedbeta1d", ["ne0", "rc", "beta", "alpha"])
+        ui.set_source(cuspedbeta1d)  # creates model
+        ui.set_full_model(cuspedbeta1d)
+
+        # set parameter values
+        ui.set_par(cuspedbeta1d.ne0, ne0guess,
+                   min=0.001*max(ne_data['ne']),
+                   max=10.*max(ne_data['ne']))
+        ui.set_par(cuspedbeta1d.rc, rcguess,
+                   min=1.,
+                   max=max(ne_data['radius']))
+        ui.set_par(cuspedbeta1d.beta, betaguess,
+                   min=0.1,
+                   max=1.)
+        ui.set_par(cuspedbeta1d.alpha, alphaguess,
+                   min=0.,
+                   max=100.)
+
     if nemodeltype == 'double_beta':
 
         # param estimate
@@ -159,33 +187,6 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
                    min=0.1,
                    max=1.)
 
-    if nemodeltype == 'cusped_beta':
-
-        # param estimate
-        betaguess = 0.7
-        rcguess = 5.  # [kpc]
-        ne0guess = max(ne_data['ne'])
-        alphaguess = 10.  # ????
-
-        # beta model
-        ui.load_user_model(cuspedbetamodel, "cuspedbeta1d")
-        ui.add_user_pars("cuspedbeta1d", ["ne0", "rc", "beta", "alpha"])
-        ui.set_source(cuspedbeta1d)  # creates model
-        ui.set_full_model(cuspedbeta1d)
-
-        # set parameter values
-        ui.set_par(cuspedbeta1d.ne0, ne0guess,
-                   min=0.001*max(ne_data['ne']),
-                   max=10.*max(ne_data['ne']))
-        ui.set_par(cuspedbeta1d.rc, rcguess,
-                   min=1.,
-                   max=max(ne_data['radius']))
-        ui.set_par(cuspedbeta1d.beta, betaguess,
-                   min=0.1,
-                   max=1.)
-        ui.set_par(cuspedbeta1d.alpha, alphaguess,
-                   min=0.,
-                   max=100.)
 
     if nemodeltype == 'double_beta_tied':
 
@@ -196,39 +197,34 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
 
         ne0guess2 = 0.01*max(ne_data['ne'])
         rcguess2 = 100. 
-        betaguess2 = 0.6
+
 
         # double beta model
-        ui.load_user_model(doublebetamodel, "doublebeta1d")
-        ui.add_user_pars("doublebeta1d",
+        ui.load_user_model(doublebetamodel_tied, "doublebeta1d_tied")
+        ui.add_user_pars("doublebeta1d_tied",
                          ["ne01", "rc1", "beta1", "ne02",
-                          "rc2", "beta2"])
-        ui.set_source(doublebeta1d)  # creates model
-        ui.set_full_model(doublebeta1d)
+                          "rc2"])
+        ui.set_source(doublebeta1d_tied)  # creates model
+        ui.set_full_model(doublebeta1d_tied)
 
         # set parameter values
-        ui.set_par(doublebeta1d.ne01, ne0guess1,
-                   min=0.0001*max(ne_data['ne']),
+        ui.set_par(doublebeta1d_tied.ne01, ne0guess1,
+                   min=0.00001*max(ne_data['ne']),
                    max=100.*max(ne_data['ne']))
-        ui.set_par(doublebeta1d.rc1, rcguess1,
+        ui.set_par(doublebeta1d_tied.rc1, rcguess1,
                    min=0.,
                    max=max(ne_data['radius']))
-        ui.set_par(doublebeta1d.beta1, betaguess1,
+        ui.set_par(doublebeta1d_tied.beta1, betaguess1,
                    min=0.1,
                    max=1.)
 
-        ui.set_par(doublebeta1d.ne02, ne0guess2,
-                   min=0.0001*max(ne_data['ne']),
+        ui.set_par(doublebeta1d_tied.ne02, ne0guess2,
+                   min=0.00001*max(ne_data['ne']),
                    max=100.*max(ne_data['ne']))
-        ui.set_par(doublebeta1d.rc2, rcguess2,
+        ui.set_par(doublebeta1d_tied.rc2, rcguess2,
                    min=10.,
                    max=max(ne_data['radius']))
-        ui.set_par(doublebeta1d.beta2, betaguess2,
-                   min=0.1,
-                   max=1.)
 
-        # tie beta2=beta1
-        ui.set_par(doublebeta1d.beta2, doublebeta1d.beta1)
 
     # fit model
     ui.fit()

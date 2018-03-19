@@ -404,6 +404,7 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, cluster,
         print 'autocorrelation time is too long'
     print ''
 
+    #print emcee.autocorr.integrated_time()
 
     return samples, sampler
 

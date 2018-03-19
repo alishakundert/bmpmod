@@ -86,7 +86,7 @@ if __name__ == '__main__':
     ind = np.where(FGdat['obsID'] == int(obsID))[0][0]
 
     # IMPORTANT: read in values for re and sersic_n also
-    cluster=set_cluster(name=obsID, z=FGdat['z'][ind], bcg_re=11.82, bcg_sersic_n=2.7, refindex=-1, count_mstar=1)
+    cluster=set_cluster(name=obsID, z=FGdat['z'][ind], bcg_re=11.72, bcg_sersic_n=2.6, refindex=-2, count_mstar=1)
 
 
     # set up cosmology
