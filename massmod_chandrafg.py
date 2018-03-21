@@ -23,14 +23,27 @@ import emcee
 import corner
 
 
+
+#default parameters and unit conversion factors
 import defaultparams.params as params
+import defaultparams.uconv as uconv
 
-from massmod.fit_density import *
-from massmod.posterior_mcmc import *
-
+#functions to read data into format used by module
 from massmod.set_prof_data import set_ne, set_tspec, set_meta
-import massmod.fit_temperature as fit_temperature
-from massmod.plotting import *
+
+#function to fit the gas density profile
+from massmod.fit_density import fitne
+
+#function to determine model temperature profile through backwards modelling
+from massmod.fit_temperature import fit_ml, fit_mcmc
+
+#analyze the marginalized posterior distribution
+from massmod.posterior_mcmc import calc_posterior_mcmc, samples_results
+
+#plotting functions
+from massmod.plotting import plt_mcmc_freeparam, plt_summary, plt_summary_nice
+
+
 
 
 def write_ne(nemodel, fn):
@@ -262,10 +275,10 @@ if __name__ == '__main__':
     Maximum likelihood parameter estimation
     '''
 
-    ml_results = fit_temperature.fit_ml(ne_data=ne_data, 
-                                        tspec_data=tspec_data, 
-                                        nemodel=nemodel, 
-                                        clustermeta=clustermeta)
+    ml_results = fit_ml(ne_data=ne_data, 
+                        tspec_data=tspec_data, 
+                        nemodel=nemodel, 
+                        clustermeta=clustermeta)
 
     # http://mathworld.wolfram.com/MaximumLikelihood.html, >define own likelihood functoin
 
@@ -274,11 +287,11 @@ if __name__ == '__main__':
     MCMC output
     '''
     # col1: c, col2:rs, col3: normsersic
-    samples, sampler = fit_temperature.fit_mcmc(ne_data=ne_data, 
-                                                tspec_data=tspec_data, 
-                                                nemodel=nemodel, 
-                                                ml_results=ml_results, 
-                                                clustermeta=clustermeta)
+    samples, sampler = fit_mcmc(ne_data=ne_data, 
+                                tspec_data=tspec_data, 
+                                nemodel=nemodel, 
+                                ml_results=ml_results, 
+                                clustermeta=clustermeta)
 
 
     # col1: rdelta, col2, mdelta, col3: mnfw, col4: mdev, col5: mgas
