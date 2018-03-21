@@ -2,6 +2,8 @@
 
 A python package to perform a mass-modelling analysis of ICM gas and temperature profiles obtained from X-ray observations.
 
+**Caveat**: this code is undergoing daily development. Check back frequently for updates.
+
 ## Installation
 
 ```
@@ -26,7 +28,8 @@ git clone https://github.com/alishakundert/massmod.git
 * Have X-ray data? 
 
     Use [template](./template.py) to read in your deprojected gas density and temperature profiles.
-
+    *In development*
+    
 * No X-ray data? 
 
     Try out an [example](./example.py) to generate mock density and temperature profiles and explore the available tools of this module.
