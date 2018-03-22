@@ -53,20 +53,41 @@ if __name__ == '__main__':
     '''
     Goal:
 
-    The primary goal of this example script is to showcase the tools available in the massmod package using mock data. The mock data is produced by randomly sampling the density and temperature profiles models published in Vikhlinin+06 for a sample of clusters. A secondary goal of this example is thus to also explore how the backwards mass modeling process used in the massmod package compares to the forward fitting results of  Vikhlinin+06.
+    The primary goal of this example script is to showcase the tools available 
+    in the massmod package using mock data. The mock data is produced by 
+    randomly sampling the density and temperature profiles models published in 
+    Vikhlinin+06 for a sample of clusters. A secondary goal of this example is 
+    thus to also explore how the backwards mass modeling process used in the 
+    massmod package compares to the forward fitting results of Vikhlinin+06.
 
 
-    The mock profiles allow for a flexible choice in noise and radial sampling rate, which allows for exploration of how these quantities affect the output of the backwards-fitting process. There is also some flexibility built into the massmod package that can be additionally tested here such as allowing for the stellar mass of the central galaxy to be included (or not included) in the model of total gravitating mass. If the stellar mass profile of the BCG is toggled on, the values for the BCG effective radius Re are pulled from the 2MASS catalog values for a de Vaucouleurs fit to their K-band data.
+    The mock profiles allow for a flexible choice in noise and radial sampling 
+    rate, which allows for exploration of how these quantities affect the 
+    output of the backwards-fitting process. There is also some flexibility 
+    built into the massmod package that can be additionally tested here such 
+    as allowing for the stellar mass of the central galaxy to be included (or 
+    not included) in the model of total gravitating mass. If the stellar mass 
+    profile of the BCG is toggled on, the values for the BCG effective radius 
+    Re are pulled from the 2MASS catalog values for a de Vaucouleurs fit to 
+    their K-band data.
 
     
-    After generating the mock temperature and density profiles, the below code walks the user through fitting a model to the gas density profile, and performing the backwards-fitting mass modelling analysis. The output includes a non-parametric model fit to the temperature profile, the total mass profile and its associated parameters describing the profile, and the contributions of different mass components (i.e., DM, stars, gas) to the total mass profile.
+    After generating the mock temperature and density profiles, the below code 
+    walks the user through fitting a model to the gas density profile, and 
+    performing the backwards-fitting mass modelling analysis. The output 
+    includes a non-parametric model fit to the temperature profile, the total 
+    mass profile and its associated parameters describing the profile, and the 
+    contributions of different mass components (i.e., DM, stars, gas) to the 
+    total mass profile.
 
 
     ######
 
     A note on usage:
 
-    Any of the clusters in Vikhlinin+06 are options to be used to generate randomly sampled temperature and density profiles. The full list of clusters is as follows:
+    Any of the clusters in Vikhlinin+06 are options to be used to generate 
+    randomly sampled temperature and density profiles. The full list of 
+    clusters is as follows:
     
     vikhlinin_clusters=[A133,
                         A262,
@@ -82,7 +103,11 @@ if __name__ == '__main__':
                         MKW4,   
                         USGCS152]  
 
-    After selecting one of these clusters, this example script will automatically generate the cluster and profile data in the proper format to be used by the module. If you have your own data you would like to analyze with the massmod package, please see the included template.py file for instructions.
+    After selecting one of these clusters, this example script will 
+    automatically generate the cluster and profile data in the proper format 
+    to be used by the module. If you have your own data you would like to 
+    analyze with the massmod package, please see the included template.py file 
+    for instructions.
 
     '''
     ########################################################################
@@ -96,7 +121,9 @@ if __name__ == '__main__':
     
 
     '''
-    Generate mock gas density and temperature profiles - according to the modeles in Vikhlinin+06. Some pertinent details are included below, more details are included in the docstrings of the functions.
+    Generate mock gas density and temperature profiles - according to the 
+    modeles in Vikhlinin+06. Some pertinent details are included below, more 
+    details are included in the docstrings of the functions.
 
     Args:
     -----
@@ -168,7 +195,10 @@ if __name__ == '__main__':
     '''
     MCMC parameter estimation
 
-    The backwards-fitting mass modelling process is performed using the MCMC algorithm emcee. The walkers of the ensemble are started from the parameter estimation output by the maximum likelihood analysis. Note the number of cores the MCMC analysis is run on is an option here. 
+    The backwards-fitting mass modelling process is performed using the MCMC 
+    algorithm emcee. The walkers of the ensemble are started from the parameter
+    estimation output by the maximum likelihood analysis. Note the number of 
+    cores the MCMC analysis is run on is an option here. 
 
     **warning: default Ncores=3, 
                default Nwalkers, Nsteps, Nburnin are small numbers to allow for fast testing

@@ -209,9 +209,7 @@ def lnlike(theta, x, y, yerr, ne_data, tspec_data, nemodel, clustermeta):
 
     model = Tmodel_func(ne_data=ne_data, tspec_data=tspec_data, nemodel=nemodel, clustermeta=clustermeta,c=c, rs=rs, normsersic=normsersic)
 
-    inv_sigma2 = 1.0/(yerr**2)  # CHECK THIS!!!
-    return -0.5*(np.sum((y-model)**2*inv_sigma2 - np.log(inv_sigma2)))
-
+    return -0.5*np.sum((((y-model)**2.)/(yerr**2.)) + np.log(2.*np.pi*(yerr**2.)))
 
 # log-prior
 def lnprior(theta,
@@ -370,6 +368,12 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
         ndim, nwalkers = 2, Nwalkers
 
     pos = [ml_results + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
+
+    print np.std(np.array(pos)[:,0])
+    print np.std(np.array(pos)[:,1])
+    print np.std(np.array(pos)[:,2])
+    exit()
+
 
     # sampler
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob,
