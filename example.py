@@ -25,9 +25,9 @@ import corner
 
 
 #suppress log info from sherpa
-import logging
-logger = logging.getLogger("sherpa")
-logger.setLevel(logging.ERROR)
+#import logging
+#logger = logging.getLogger("sherpa")
+#logger.setLevel(logging.ERROR)
 
 
 #default parameters and unit conversion factors
@@ -175,14 +175,14 @@ if __name__ == '__main__':
                                  tspec_data=tspec_data)
 
 
-
+    exit()
     #Find the parameters and param errors of the best-fitting gas density model
     nemodel=fitne(ne_data=ne_data,
                   tspec_data=tspec_data,
                   nemodeltype=str(nemodeltype)) #[cm^-3]
 
 
-
+    exit()
     ##########################################################################
     ######################################################################### 
     ##########################################################################

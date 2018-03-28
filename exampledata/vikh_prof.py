@@ -112,7 +112,7 @@ def vikh_neprof(pars, r):
     #######################################################################
 
 
-def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, incl_mstar=0,incl_mgas=1):
+def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, refindex= -1, incl_mstar=0,incl_mgas=1):
 
     table_z=atpy.Table.read('./exampledata/table1_z.txt',format='ascii') 
     table_ne=atpy.Table.read('./exampledata/table2_ne.txt',format='ascii')   
@@ -138,7 +138,7 @@ def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, 
     reff_arcsec=table_reff['2MASS_K_Reff_arcsec'][np.where(table_reff['cluster']==clusterID)[0][0]] #[arcsec]
     reff=np.round(reff_arcsec*skyscale, decimals=2) #[kpc]
 
-    cluster=set_meta(name=clusterID, z=z, bcg_re=reff, bcg_sersic_n=4., refindex=-1, incl_mstar=incl_mstar,incl_mgas=incl_mgas)
+    cluster=set_meta(name=clusterID, z=z, bcg_re=reff, bcg_sersic_n=4., refindex=refindex, incl_mstar=incl_mstar,incl_mgas=incl_mgas)
 
 
     '''

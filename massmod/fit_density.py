@@ -46,7 +46,7 @@ Fitting function for density profile
 '''
 
 
-def fitne(ne_data, nemodeltype, tspec_data=0):
+def fitne(ne_data, nemodeltype, tspec_data=None):
 
     '''
     Fits gas number density profile according to selected profile model.
@@ -84,9 +84,9 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
 
     '''
 
-
-
-
+    #remove any existing models and data
+    ui.clean()
+    
     # load data
     ui.load_arrays(1,
                    np.array(ne_data['radius']),
@@ -95,8 +95,8 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
 
     # set guess and boundaries on params given selected model
 
-    if nemodeltype == 'single_beta':
-        
+    if nemodeltype == 'single_beta':  
+
         # param estimate
         betaguess = 0.6
         rcguess = 20.  # units?????
@@ -108,6 +108,7 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
         ui.set_source(beta1d)  # creates model
         ui.set_full_model(beta1d)
 
+        
         # set parameter values
         ui.set_par(beta1d.ne0, ne0guess,
                    min=0,
@@ -118,7 +119,6 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
         ui.set_par(beta1d.beta, betaguess,
                    min=0.1,
                    max=1.)
-
 
     if nemodeltype == 'cusped_beta':
 
@@ -225,7 +225,6 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
                    min=10.,
                    max=max(ne_data['radius']))
 
-
     # fit model
     ui.fit()
 
@@ -269,13 +268,12 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
     nemodel['rchisq'] = rchisq
 
 
-
     # calculate an array that contains the modeled gas density at the same
     # radii positions as the tspec array and add to nemodel dictionary
 
     # if tspec_data included, calculate value of ne model at the same radius
     # positions as temperature profile
-    if tspec_data != 0:
+    if tspec_data is not None:
         if nemodeltype == 'double_beta':
             nefit_arr = doublebetamodel(nemodel['parvals'],
                                         np.array(tspec_data['radius']))
@@ -297,6 +295,7 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
             # [cm-3]
 
         nemodel['nefit'] = nefit_arr
+
 
     return nemodel
 
