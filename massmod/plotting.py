@@ -343,7 +343,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 #############################################################################
 
 
-def plt_densityprof(nemodel, annotations):
+def plt_densityprof(nemodel, annotations=0):
 
     '''
     Helper function to plot the best-fitting model of the gas density profile.

@@ -25,9 +25,9 @@ import corner
 
 
 #suppress log info from sherpa
-#import logging
-#logger = logging.getLogger("sherpa")
-#logger.setLevel(logging.ERROR)
+import logging
+logger = logging.getLogger("sherpa")
+logger.setLevel(logging.ERROR)
 
 
 #default parameters and unit conversion factors
@@ -171,18 +171,17 @@ if __name__ == '__main__':
     '''
 
     #Determine the best fitting model to the density profile. Output will be one of the following: 'single_beta', 'cusped_beta', 'double_beta', 'double_beta_tied'
-    nemodeltype=find_nemodeltype(ne_data=ne_data,
-                                 tspec_data=tspec_data)
+    nemodeltype, fig = find_nemodeltype(ne_data=ne_data,
+                                        tspec_data=tspec_data,
+                                        optplt=1)
 
 
-    exit()
     #Find the parameters and param errors of the best-fitting gas density model
     nemodel=fitne(ne_data=ne_data,
                   tspec_data=tspec_data,
                   nemodeltype=str(nemodeltype)) #[cm^-3]
 
 
-    exit()
     ##########################################################################
     ######################################################################### 
     ##########################################################################

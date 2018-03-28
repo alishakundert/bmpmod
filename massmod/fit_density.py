@@ -1,9 +1,14 @@
 import sherpa.ui as ui
 import numpy as np
 
-from density_models import *
+import matplotlib
+import matplotlib.pyplot as plt
 
-def find_nemodeltype(ne_data, tspec_data):
+from density_models import *
+import plotting
+
+
+def find_nemodeltype(ne_data, tspec_data, optplt=0):
 
     '''
     Find the best fitting model to the gas density profile. Options include:
@@ -12,6 +17,10 @@ def find_nemodeltype(ne_data, tspec_data):
 
     Best-fitting model is determined by the lowest reduced chi-squared, as
     determined by levenberg marquardt python sherpa.
+
+    Args:
+    -----
+    optplt(int): option to plot
 
 
     Returns:
@@ -24,15 +33,44 @@ def find_nemodeltype(ne_data, tspec_data):
                   'double_beta_tied']
     opt_rchisq = []
 
+    if optplt==1:
+        fig1 = plt.figure(1, (8, 8))
+        fig1.clf()
+
+
     for ii in range(0, len(opt_models)):
         nemodel = fitne(ne_data=ne_data, nemodeltype=opt_models[ii],
                         tspec_data=tspec_data)
         opt_rchisq.append(nemodel['rchisq'])
 
+        if optplt==1:
+            ax=fig1.add_subplot(2,2,ii+1)
+
+            #best-fitting density model
+            plotting.plt_densityprof(nemodel,annotations=1)
+
+            #data
+            plt.errorbar(ne_data['radius'], ne_data['ne'],
+                         xerr=[ne_data['radius_lowerbound'], 
+                               ne_data['radius_upperbound']],
+                         yerr=ne_data['ne_err'], 
+                         marker='o', markersize=2,
+                         linestyle='none', color='b')
+
+            plt.annotate(str(opt_models[ii]),(0.55,0.9),xycoords='axes fraction')
+
+            ax.set_xscale("log", nonposx='clip')
+            ax.set_yscale("log", nonposy='clip')
+
+            plt.xlabel('r [kpc]')
+            plt.ylabel('$n_{e}$ [cm$^{-3}$]')
+
+            plt.tight_layout()
+
     opt_rchisq = np.array(opt_rchisq)
     ind = np.where(opt_rchisq == min(opt_rchisq))[0][0]
 
-    return opt_models[ind]
+    return opt_models[ind], fig1
 
 #############################################################################
 #############################################################################
