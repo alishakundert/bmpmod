@@ -89,7 +89,7 @@ def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, clustermeta):
         if clustermeta['incl_mstar']==1:
             plt.annotate(r'$\tau_{\mathrm{acor}}(log(\rho_{\star,0,\mathrm{Sersic}}))$='+str(int(np.round(tacor[2],0))),(xa,ya-0.2),xycoords='figure fraction')
 
-    except RuntimeError:
+    except:
         pass
 
     return fig1
@@ -153,8 +153,8 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
                  yerr=ne_data['ne_err'], linestyle='none', color='#707070')
 
     plt.xlim(xmin=1)
-    ax.set_xscale("log", nonposy='clip')
-    ax.set_yscale("log", nonposx='clip')
+    ax.set_xscale("log", nonposx='clip')
+    ax.set_yscale("log", nonposy='clip')
 
     plt.xlabel('r [kpc]')
     plt.ylabel('$n_{e}$ [cm$^{-3}$]')
@@ -511,8 +511,8 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
         yerr=ne_data['ne_err'], linestyle='none', color='#707070')
 
     plt.xlim(xmin=1)
-    ax.set_xscale("log", nonposy='clip')
-    ax.set_yscale("log", nonposx='clip')
+    ax.set_xscale("log", nonposx='clip')
+    ax.set_yscale("log", nonposy='clip')
 
     plt.xlabel('r [kpc]')
     plt.ylabel('$n_{e}$ [cm$^{-3}$]')

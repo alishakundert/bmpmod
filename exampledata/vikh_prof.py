@@ -78,7 +78,7 @@ def vikh_neprof(pars, r):
     -----------
     Vikhlinin, A., Kravtsov, A., Forman, W., et al. 2006, ApJ, 640, 691
     '''
-
+    
     rdet = pars['rdet']  # [kpc]
     n0 = pars['n0']*10**-3.  # [cm^-3]
     rc = pars['rc']  # [kpc]
@@ -91,13 +91,20 @@ def vikh_neprof(pars, r):
     beta2 = pars['beta2']
 
     gamma = 3.
-    
-    ne = np.sqrt(params.ne_over_np*(((n0**2.)*((r/rc)**-alpha)
-            / (((1.+(r/rc)**2.)**((3.*beta)-(alpha/2.)))
-                * ((1.+(r/rs)**gamma)**(epsilon/gamma))))
-            + ((n02**2.)/((1.+(r/rc2)**2.)**(3.*beta2)))))
+ 
 
-    return ne
+    if n02>0:
+        ne=np.sqrt(params.ne_over_np*(((n0**2.)*((r/rc)**-alpha)
+                            / (((1.+(r/rc)**2.)**((3.*beta)-(alpha/2.)))
+                               * ((1.+(r/rs)**gamma)**(epsilon/gamma))))
+                            + ((n02**2.)/((1.+(r/rc2)**2.)**(3.*beta2)))))
+    else:
+        ne=np.sqrt(params.ne_over_np*(((n0**2.)*((r/rc)**-alpha)
+                            / (((1.+(r/rc)**2.)**((3.*beta)-(alpha/2.)))
+                               * ((1.+(r/rs)**gamma)**(epsilon/gamma))))))
+    
+
+    return np.array(ne)
 
 
     #######################################################################
@@ -142,7 +149,6 @@ def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, 
     #radial positions of profile
     rpos_ne=np.logspace(np.log10(rmin),np.log10(800.),N_ne) #[kpc]
 
-
     #parameter of ne profile in vikh table 2
     ind=np.where(table_ne['cluster']==clusterID)[0][0]
     nemodel_params=table_ne[ind]
@@ -150,17 +156,15 @@ def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, 
     #ne profile of vikh
     ne_true=vikh_neprof(nemodel_params,rpos_ne)
 
-
     #want to draw from a gaussian centered on ypos, with sigma=percent noise. output is the final y values, sigma is defined by noise
     ne=np.random.normal(ne_true, noise_ne*ne_true)
 
     ne_err=noise_ne*ne_true
 
     #set up proper ne_data table strucuture
-    ne_data=set_ne(
-        radius=rpos_ne,
-        ne=ne,
-        ne_err=ne_err)
+    ne_data=set_ne(radius=rpos_ne,
+                   ne=ne,
+                   ne_err=ne_err)
 
     #######################################################################
 

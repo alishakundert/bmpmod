@@ -96,7 +96,7 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
     # set guess and boundaries on params given selected model
 
     if nemodeltype == 'single_beta':
-
+        
         # param estimate
         betaguess = 0.6
         rcguess = 20.  # units?????
@@ -113,7 +113,7 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
                    min=0,
                    max=10.*max(ne_data['ne']))
         ui.set_par(beta1d.rc, rcguess,
-                   min=0.5,
+                   min=0.1,
                    max=max(ne_data['radius']))
         ui.set_par(beta1d.beta, betaguess,
                    min=0.1,
@@ -139,7 +139,7 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
                    min=0.001*max(ne_data['ne']),
                    max=10.*max(ne_data['ne']))
         ui.set_par(cuspedbeta1d.rc, rcguess,
-                   min=1.,
+                   min=0.1,
                    max=max(ne_data['radius']))
         ui.set_par(cuspedbeta1d.beta, betaguess,
                    min=0.1,
@@ -171,7 +171,7 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
                    min=0.0001*max(ne_data['ne']),
                    max=100.*max(ne_data['ne']))
         ui.set_par(doublebeta1d.rc1, rcguess1,
-                   min=0.,
+                   min=0.1,
                    max=max(ne_data['radius']))
         ui.set_par(doublebeta1d.beta1, betaguess1,
                    min=0.1,
@@ -212,7 +212,7 @@ def fitne(ne_data, nemodeltype, tspec_data=0):
                    min=0.00001*max(ne_data['ne']),
                    max=100.*max(ne_data['ne']))
         ui.set_par(doublebeta1d_tied.rc1, rcguess1,
-                   min=0.,
+                   min=0.1,
                    max=max(ne_data['radius']))
         ui.set_par(doublebeta1d_tied.beta1, betaguess1,
                    min=0.1,

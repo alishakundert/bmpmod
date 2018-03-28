@@ -402,8 +402,8 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
     #check autocorrelation time
     try:
         print 'autocorrelation time:',sampler.acor
-    except RuntimeError:
-        print 'autocorrelation time is too long'
+    except:
+        print 'autocorrelation time cannot be calculated'
     print ''
 
     #print emcee.autocorr.integrated_time()
