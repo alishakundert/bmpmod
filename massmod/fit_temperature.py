@@ -372,8 +372,6 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
     print np.std(np.array(pos)[:,0])
     print np.std(np.array(pos)[:,1])
     print np.std(np.array(pos)[:,2])
-    exit()
-
 
     # sampler
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob,

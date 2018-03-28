@@ -91,7 +91,7 @@ def vikh_neprof(pars, r):
     beta2 = pars['beta2']
 
     gamma = 3.
-
+    
     ne = np.sqrt(params.ne_over_np*(((n0**2.)*((r/rc)**-alpha)
             / (((1.+(r/rc)**2.)**((3.*beta)-(alpha/2.)))
                 * ((1.+(r/rs)**gamma)**(epsilon/gamma))))

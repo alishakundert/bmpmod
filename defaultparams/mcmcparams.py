@@ -14,7 +14,7 @@ normsersic_boundmin = 0.1
 normsersic_boundmax = 100.
 
 
-Ncores = 3
+Ncores = 1
 Nwalkers = 30
 Nsteps = 30
 Nburnin = 10
