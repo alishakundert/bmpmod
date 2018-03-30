@@ -125,7 +125,7 @@ def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, 
 
     #minimum radius of vikhlinin temp prof
     rmin=table_z['rmin_kpc'][np.where(table_z['cluster']==clusterID)[0][0]]
-
+    rmax=table_z['rdet_kpc'][np.where(table_z['cluster']==clusterID)[0][0]]
 
     
     # set up cosmology
@@ -147,8 +147,27 @@ def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, 
     '''
 
     #radial positions of profile
-    rpos_ne=np.logspace(np.log10(rmin),np.log10(800.),N_ne) #[kpc]
+    rpos_ne=np.logspace(np.log10(rmin),np.log10(rmax),N_ne) #[kpc]
 
+    #error bars on rpos
+    radius_lowerbound=[]
+    radius_upperbound=[]
+    for ii in range(0,len(rpos_ne)):
+
+        if ii==0:
+            radius_lowerbound.append((rpos_ne[ii]-rmin)/2.)
+            radius_upperbound.append((rpos_ne[ii+1]-rpos_ne[ii])/2.)
+            continue
+
+        if ii==len(rpos_ne)-1:
+            radius_upperbound.append((rmax-rpos_ne[ii])/2.)
+            radius_lowerbound.append((rpos_ne[ii]-rpos_ne[ii-1])/2.)
+            continue
+            
+        radius_lowerbound.append((rpos_ne[ii]-rpos_ne[ii-1])/2.)
+        radius_upperbound.append((rpos_ne[ii+1]-rpos_ne[ii])/2.)
+
+    
     #parameter of ne profile in vikh table 2
     ind=np.where(table_ne['cluster']==clusterID)[0][0]
     nemodel_params=table_ne[ind]
@@ -162,10 +181,15 @@ def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, 
     ne_err=noise_ne*ne_true
 
     #set up proper ne_data table strucuture
-    ne_data=set_ne(radius=rpos_ne,
-                   ne=ne,
-                   ne_err=ne_err)
+    ne_data=set_ne(radius=np.array(rpos_ne),
+                   ne=np.array(ne),
+                   ne_err=np.array(ne_err),
+                   radius_lowerbound=np.array(radius_lowerbound),
+                   radius_upperbound=np.array(radius_upperbound))
 
+
+
+    
     #######################################################################
 
 
@@ -177,9 +201,25 @@ def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, 
     #nb: fewer temperature data points from spectral analysis than density points from surface brightness analysis
 
     
-    rpos_tspec=np.logspace(np.log10(rmin),np.log10(800.),N_temp)
+    rpos_tspec=np.logspace(np.log10(rmin),np.log10(rmax),N_temp)
 
+    #error bars on rpos
+    radius_lowerbound=[]
+    radius_upperbound=[]
+    for ii in range(0,len(rpos_tspec)):
 
+        if ii==0:
+            radius_lowerbound.append((rpos_tspec[ii]-rmin)/2.)
+            radius_upperbound.append((rpos_tspec[ii+1]-rpos_tspec[ii])/2.)
+            continue
+
+        if ii==len(rpos_tspec)-1:
+            radius_upperbound.append((rmax-rpos_tspec[ii])/2.)
+            radius_lowerbound.append((rpos_tspec[ii]-rpos_tspec[ii-1])/2.)
+            continue
+            
+        radius_lowerbound.append((rpos_tspec[ii]-rpos_tspec[ii-1])/2.)
+        radius_upperbound.append((rpos_tspec[ii+1]-rpos_tspec[ii])/2.)
 
 
     #parameter of temperature profile in vikh table 3
@@ -200,10 +240,11 @@ def gen_vik_data(clusterID, N_ne=50, N_temp=10, noise_ne=0.01, noise_temp=0.05, 
 
     #tspec_err=tspec*noise*noise_fac
 
-    tspec_data=set_tspec(
-        radius=rpos_tspec,
-        tspec=tspec,
-        tspec_err=tspec_err)
+    tspec_data=set_tspec(radius=np.array(rpos_tspec),
+                         tspec=np.array(tspec),
+                         tspec_err=np.array(tspec_err),
+                         radius_lowerbound=np.array(radius_lowerbound),
+                         radius_upperbound=np.array(radius_upperbound))
 
 
     return cluster, ne_data, tspec_data, nemodel_params, tprof_params

@@ -161,7 +161,8 @@ if __name__ == '__main__':
                          incl_mstar=1, 
                          incl_mgas=1) 
 
- 
+
+
     ########################################################################
     ########################################################################
     #######################################################################
@@ -171,15 +172,15 @@ if __name__ == '__main__':
     '''
 
     #Determine the best fitting model to the density profile. Output will be one of the following: 'single_beta', 'cusped_beta', 'double_beta', 'double_beta_tied'
-    nemodeltype, fig = find_nemodeltype(ne_data=ne_data,
-                                        tspec_data=tspec_data,
-                                        optplt=1)
+#    nemodeltype, fig = find_nemodeltype(ne_data=ne_data,
+#                                        tspec_data=tspec_data,
+#                                        optplt=1)
 
 
     #Find the parameters and param errors of the best-fitting gas density model
     nemodel=fitne(ne_data=ne_data,
                   tspec_data=tspec_data,
-                  nemodeltype=str(nemodeltype)) #[cm^-3]
+                  nemodeltype='single_beta') #[cm^-3]
 
 
     ##########################################################################
@@ -222,10 +223,11 @@ if __name__ == '__main__':
                                 nemodel=nemodel, 
                                 ml_results=ml_results, 
                                 clustermeta=clustermeta,
-                                Ncores=params.Ncores,
-                                Nwalkers=params.Nwalkers,
-                                Nsteps=params.Nsteps,
-                                Nburnin=params.Nburnin)
+                                Ncores=3,
+                                Nwalkers=50,
+                                Nsteps=50,
+                                Nburnin=5)
+
 
     #analyze the marginalized MCMC distribution to calculate Rdelta, Mdelta
     samples_aux = calc_posterior_mcmc(samples=samples, 
@@ -253,18 +255,16 @@ if __name__ == '__main__':
 
 
     #Summary plot: density profile, temperature profile, mass profile
-    fig2 = plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta)
+    fig2, ax1, ax2 = plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta)
 
-    ax=fig2.add_subplot(2,2,1)
+    #add vikhlinin model to density plot
     xplot=np.logspace(np.log10(min(ne_data['radius'])),np.log10(800.),1000)
-    plt.loglog(xplot,vikh_neprof(nemodel_vikh,xplot),'k')
-    plt.xlim(xmin=min(ne_data['radius']))
+    ax1.plot(xplot,vikh_neprof(nemodel_vikh,xplot),'k')
+    #plt.xlim(xmin=min(ne_data['radius']))
 
-    ax=fig2.add_subplot(2,2,2)
+    #add viklinin model to temperature plot
     xplot=np.logspace(np.log10(min(tspec_data['radius'])),np.log10(800.),1000)
-    plt.semilogx(xplot,vikh_tprof(tmodel_vikh,xplot),'k-')
-    #plt.xlim(xmin=min(tspec_data['radius']))
- 
+    ax2.plot(xplot,vikh_tprof(tmodel_vikh,xplot),'k-')
 
 
     plt.tight_layout()

@@ -25,7 +25,9 @@ from density_models import *
 
 import acor
 
+import sys
 
+import time
 ##############################################################################
 ##############################################################################
 ##############################################################################
@@ -369,9 +371,6 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
 
     pos = [ml_results + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
 
-    print np.std(np.array(pos)[:,0])
-    print np.std(np.array(pos)[:,1])
-    print np.std(np.array(pos)[:,2])
 
     # sampler
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob,
@@ -383,21 +382,32 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
                                     threads=Ncores)
     # WHY ARE THE ARGS THE WAY THEY ARE???
 
-    #autocorrelation time
-    #print 'autocorrelation time:' sampler
+
+    ## run ensemble sampler for given number of steps
+    #start=time.time()
+    #sampler.run_mcmc(pos, Nsteps)
+    #end=time.time()
+    #print end-start
+
+    
+    #start=time.time()
+    #begin testing
+    for i, result in enumerate(sampler.sample(pos, iterations=Nsteps)):
+        if 100.*((float(i+1.))/Nsteps) % 10 == 0:
+            print 'MCMC progress: '+"{0:5.1%}".format(float(i+1.) / Nsteps)
+    #end testing
+    #end=time.time()
+    #print end-start
 
 
-
-    # run mcmc for 500 steps
-    sampler.run_mcmc(pos, Nsteps)
     samples = sampler.chain[:, Nburnin:, :].reshape((-1, ndim))
     # length of samples = walkers*steps
 
 
     #check acceptance rate: goal between 0.2-0.5
-    print 'acceptance rate of walkers:'
-    print sampler.acceptance_fraction
-    print ''
+    #print 'acceptance rate of walkers:'
+    #print sampler.acceptance_fraction
+ 
 
     #check autocorrelation time
     try:

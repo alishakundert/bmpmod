@@ -62,8 +62,10 @@ def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data, clustermeta):
     
     fig1 = corner.corner(samples, labels=["$c$", "$R_s$", r"$\rho_{\star,0,\mathrm{Sersic}}$"])
 
-    plt.annotate('Nwalkers, Nsteps = '+str(params.Nwalkers)+', '+str(params.Nsteps),(xa,0.95),xycoords='figure fraction')
-    plt.annotate('Nburnin = '+str(params.Nburnin),(xa,0.9),xycoords='figure fraction')
+    chainshape=np.array(sampler.chain).shape
+    
+    plt.annotate('Nwalkers, Nsteps = '+str(chainshape[0])+', '+str(chainshape[1]),(xa,0.95),xycoords='figure fraction')
+    #plt.annotate('Nburnin = '+str(params.Nburnin),(xa,0.9),xycoords='figure fraction')
 
 
     plt.annotate('$r_{\mathrm{ref}}$='+str(int(tspec_data['radius'][clustermeta['refindex']]))+' kpc',(xa,0.8),xycoords='figure fraction')
@@ -131,35 +133,39 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
             DM, stars, gas
     '''
 
-    fig2 = plt.figure(2, (8, 8))
+    fig2 = plt.figure(2, (9, 9))
     plt.figure(2)
-
+        
     matplotlib.rcParams['font.size'] = 10
     matplotlib.rcParams['axes.labelsize'] = 12
     matplotlib.rcParams['legend.fontsize'] = 10
     matplotlib.rcParams['mathtext.default'] = 'regular'
     matplotlib.rcParams['mathtext.fontset'] = 'stixsans'
 
+    plt.suptitle(str(clustermeta['name']))
+        
     '''
     gas density
     '''
-    ax = fig2.add_subplot(2, 2, 1)
+    ax1 = fig2.add_subplot(2, 2, 1)     
 
     plt.loglog(ne_data['radius'], ne_data['ne'], 'o', color='#707070',
                markersize=2)
 
     plt.errorbar(ne_data['radius'], ne_data['ne'],
                  xerr=[ne_data['radius_lowerbound'], ne_data['radius_upperbound']],
-                 yerr=ne_data['ne_err'], linestyle='none', color='#707070')
+                 yerr=ne_data['ne_err'], linestyle='none', color='b')
 
     plt.xlim(xmin=1)
-    ax.set_xscale("log", nonposx='clip')
-    ax.set_yscale("log", nonposy='clip')
+    ax1.set_xscale("log", nonposx='clip')
+    ax1.set_yscale("log", nonposy='clip')
 
     plt.xlabel('r [kpc]')
     plt.ylabel('$n_{e}$ [cm$^{-3}$]')
 
     plt_densityprof(nemodel, annotations=1)
+    
+
 
     '''
     final kT profile with c, rs
@@ -184,7 +190,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 
 
 
-    ax = fig2.add_subplot(2, 2, 2)
+    ax2 = fig2.add_subplot(2, 2, 2)
 
     plt.semilogx(tspec_data['radius'], tspec_data['tspec'], 'bo')
 
@@ -202,8 +208,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
                  + str(int(tspec_data['radius'][clustermeta['refindex']]))
                  + ' kpc', (0.05,0.9), xycoords='axes fraction')
 
-    plt.ylim(ymin=0)
-    plt.xlim(xmin=1)
+    #plt.xlim(xmin=1)
 
     plt.semilogx(tspec_data['radius'], np.array(tfit_arr), 'r-')
 
@@ -213,7 +218,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     OVERDENSITY RADIUS: MASS PROFILE
     '''
 
-    ax = fig2.add_subplot(2, 2, 3)
+    ax3 = fig2.add_subplot(2, 2, 3)
 
     xplot = np.logspace(np.log10(1.), np.log10(900.), 100)
 
@@ -244,7 +249,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
         plt.loglog(xplot, mass_gas, 'y-', label='M$_{\mathrm{gas}}$')
 
 
-    handles, labels = ax.get_legend_handles_labels()
+    handles, labels = ax3.get_legend_handles_labels()
     plt.legend(handles, labels, loc=2)
 
     plt.xlim(xmin=2)
@@ -336,7 +341,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
                      + '} \ M_{\odot}$',
                      (0.55, 0.05), xycoords='figure fraction')
         
-    return fig2
+    return fig2, ax1, ax2
 
 #############################################################################
 #############################################################################

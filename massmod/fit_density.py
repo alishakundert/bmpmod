@@ -37,14 +37,33 @@ def find_nemodeltype(ne_data, tspec_data, optplt=0):
         fig1 = plt.figure(1, (8, 8))
         fig1.clf()
 
-
+        maxy=0
+        miny=999
+        
     for ii in range(0, len(opt_models)):
         nemodel = fitne(ne_data=ne_data, nemodeltype=opt_models[ii],
                         tspec_data=tspec_data)
         opt_rchisq.append(nemodel['rchisq'])
 
+
         if optplt==1:
-            ax=fig1.add_subplot(2,2,ii+1)
+            
+            if ii==0:
+                ax0=fig1.add_subplot(2,2,ii+1)
+                ax0.set_xscale("log", nonposx='clip')
+                ax0.set_yscale("log", nonposy='clip')
+            if ii==1:
+                ax1=fig1.add_subplot(2,2,ii+1)
+                ax1.set_xscale("log", nonposx='clip')
+                ax1.set_yscale("log", nonposy='clip')                
+            if ii==2:
+                ax2=fig1.add_subplot(2,2,ii+1)
+                ax2.set_xscale("log", nonposx='clip')
+                ax2.set_yscale("log", nonposy='clip')               
+            if ii==3:
+                ax3=fig1.add_subplot(2,2,ii+1)
+                ax3.set_xscale("log", nonposx='clip')
+                ax3.set_yscale("log", nonposy='clip')
 
             #best-fitting density model
             plotting.plt_densityprof(nemodel,annotations=1)
@@ -59,13 +78,25 @@ def find_nemodeltype(ne_data, tspec_data, optplt=0):
 
             plt.annotate(str(opt_models[ii]),(0.55,0.9),xycoords='axes fraction')
 
-            ax.set_xscale("log", nonposx='clip')
-            ax.set_yscale("log", nonposy='clip')
 
             plt.xlabel('r [kpc]')
             plt.ylabel('$n_{e}$ [cm$^{-3}$]')
+            
+            ymin,ymax=plt.ylim()
+            if ymax>maxy:
+                maxy=ymax
+            if ymin<miny:
+                miny=ymin
 
-            plt.tight_layout()
+    
+    if optplt==1:
+        
+        ax0.set_ylim(miny,maxy)
+        ax1.set_ylim(miny,maxy)
+        ax2.set_ylim(miny,maxy)
+        ax3.set_ylim(miny,maxy)
+
+        plt.tight_layout()
 
     opt_rchisq = np.array(opt_rchisq)
     ind = np.where(opt_rchisq == min(opt_rchisq))[0][0]
