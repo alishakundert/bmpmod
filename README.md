@@ -1,23 +1,22 @@
 # bmpmod
 
-bmpmod is a python package designed to fit for the total mass profile of a galaxy cluster given input radial profiles of the intracluster medium gas density and temperature. 
+bmpmod is a python package designed to determine the total mass profile of a galaxy cluster via a MCMC fit of input radial profiles of the intracluster medium gas density and temperature.
 
 ***  
 **Caveat**: This code is undergoing daily development - check back frequently for updates! 
 An official release of this package is anticipated for June 2018.
 ***  
 
-To briefly summarize the analysis process of this package, backwards fitting mass modelling assumes hydrostatic equilibrium and fits the temperature profile with a model of the form:
+To briefly summarize the analysis process of this package: 
 
-$kT(R) = \frac{kT(R_{\mathrm{ref}}) \ n_{e}(R_{\mathrm{ref}})}{n_{e}(R)} -\frac{\mu m_{p} G}{n_{e}(R)}
-\int_{R_{\mathrm{ref}}}^R \frac{n_{e}(r) M_{\mathrm{grav}}(r)}{r^2} dr$  
+Backwards fitting mass modelling assumes hydrostatic equilibrium and fits the observed temperature profile with a model dependent on a parametric model fit to the gas density profile and an assumed form of the total gravitating mass profile of the cluster. The results of this fit to the temperature profile are the free parameters of the cluster mass model. 
 
+The cluster mass model represents the sum of all mass contributions: Mtot(r) = MDM(r) + Mgas(r) + Mstar(r). In bmpmod, this is accounted for by taking MDM(r) to be the form of a NFW profile with free-params of the concentration parameter and scale radius, Mgas(r) to follow from the gas mass density profile, and optionally Mstar(r) as the contribution of the stellar mass of the central galaxy as modeled by a Sersic profile. 
 
-Where \rho_gas(r) is the parametric model fit to the gas density profile, and Mtot is the total gravitating mass model of the form Mtot = MDM+Mgas+Mstars.
+Full details of this mass profile modeling method as implemented here in bmpmod will be available soon in Kundert et al. 2018, in prep.
 
-The end goal of this process is to determine the free parameters of Mtot, which is accomplished in the fit of the temperature model to the temperature profile via a MCMC analysis. This package takes MDM to be the form of a NFW profile with free-params of the concentration parameter and scale radius, Mgas to follow from the gas mass density profile, and optionally Mstar as the contribution of the stellar mass of the central galaxy modeled by a Sersic profile. To see an example of this code in action, check out an [example](./example.ipynb)!
+To see an example of this code in action, check out an [example](./example.ipynb)!
 
-Full details of this method will be available soon in Kundert et al. 2018, in prep.
 
 
 ## Installation
