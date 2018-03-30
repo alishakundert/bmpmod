@@ -3,7 +3,7 @@
 bmpmod is a python package designed to determine the total mass profile of a galaxy cluster via a MCMC fit of input radial profiles of the intracluster medium gas density and temperature.
 
 ***  
-**Caveat**: This code is undergoing daily development - check back frequently for updates! 
+**Caveat**: This code is undergoing daily development - check back frequently for updates!  
 An official release of this package is anticipated for June 2018.
 ***  
 
