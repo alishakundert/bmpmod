@@ -302,10 +302,10 @@ def fit_ml(ne_data, tspec_data, nemodel, clustermeta,
                                      (normsersic_boundmin, normsersic_boundmax)))
         
         c_ml, rs_ml, normsersic_ml = result["x"]
-        print 'scipy.optimize results'
-        print 'ML: c=', c_ml
-        print 'ML: rs=', rs_ml
-        print 'ML: normsersic=', normsersic_ml
+        print 'MLE results'
+        print 'MLE: c=', c_ml
+        print 'MLE: rs=', rs_ml
+        print 'MLE: normsersic=', normsersic_ml
         
         return [c_ml, rs_ml, normsersic_ml]
 
@@ -319,9 +319,9 @@ def fit_ml(ne_data, tspec_data, nemodel, clustermeta,
                                      (rs_boundmin, rs_boundmax)))
         
         c_ml, rs_ml = result["x"]
-        print 'scipy.optimize results'
-        print 'ML: c=', c_ml
-        print 'ML: rs=', rs_ml
+        print 'MLE results'
+        print 'MLE: c=', c_ml
+        print 'MLE: rs=', rs_ml
         
         return [c_ml, rs_ml]
 

@@ -152,11 +152,13 @@ def samples_results(samples,samples_aux,clustermeta):
 
     rdelta_mcmc, mdelta_mcmc, mdm_mcmc, mstars_mcmc, mgas_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),zip(*np.percentile(samples_aux, [16, 50, 84],axis=0)))
 
-    print 'MCMC results'
-    print 'MCMC: c=' ,c_mcmc
-    print 'MCMC: rs=', rs_mcmc
-    if clustermeta['incl_mstar']==1:
-        print 'MCMC: normsersic=', normsersic_mcmc
+    #print 'MCMC results'
+    #print 'MCMC: c=' ,c_mcmc
+    #print 'MCMC: rs=', rs_mcmc
+    #if clustermeta['incl_mstar']==1:
+    #    print 'MCMC: normsersic=', normsersic_mcmc
+    #print 'MCMC: R500=', rdelta_mcmc
+    #print 'MCMC: M500=', mdelta_mcmc
 
 
     mcmc_results={}

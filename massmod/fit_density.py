@@ -29,8 +29,7 @@ def find_nemodeltype(ne_data, tspec_data, optplt=0):
 
     '''
 
-    opt_models = ['single_beta', 'cusped_beta', 'double_beta',
-                  'double_beta_tied']
+    opt_models = ['single_beta', 'cusped_beta', 'double_beta_tied', 'double_beta']
     opt_rchisq = []
 
     if optplt==1:
