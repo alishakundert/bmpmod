@@ -1,6 +1,6 @@
 # bmpmod
 
-**Backwards mass profile modeling (bmpmod) for galaxy clusters.**
+**A backwards mass profile modeler (bmpmod) for galaxy clusters.**
 
 bmpmod is a python package designed to determine the total mass profile of a galaxy cluster via a MCMC fit of input radial profiles of the intracluster medium gas density and temperature.
 
@@ -17,7 +17,7 @@ The cluster mass model represents the sum of all mass contributions: Mtot(r) = M
 
 Full details of this mass profile modeling method as implemented here in bmpmod will be available soon in Kundert et al. 2018, in prep.
 
-To see an example of this code in action, check out an [example](./example.ipynb)!
+To see an example of this code, check out [./example.ipynb](./example.ipynb)!
 
 
 
@@ -44,9 +44,9 @@ git clone https://github.com/alishakundert/massmod.git
 
 * Have X-ray data? 
 
-    Use [template](./template.py) to read in your deprojected gas density and temperature profiles.
+    Use a [template](./template.py) to read in your deprojected gas density and temperature profiles.
     *In development*
     
 * No X-ray data? 
 
-    Try out an [example](./example.py) to generate mock density and temperature profiles and explore the available tools of this module.
+    Try out an [example](./example.ipynb) to generate mock density and temperature profiles and explore the available tools of this module.
