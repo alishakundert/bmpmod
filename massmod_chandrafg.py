@@ -291,8 +291,8 @@ if __name__ == '__main__':
     samples, sampler = fit_mcmc(ne_data=ne_data,
                                 tspec_data=tspec_data,
                                 nemodel=nemodel,
-                                ml_results=ml_results,
-                                clustermeta=clustermeta)
+                                clustermeta=clustermeta,
+                                ml_results=ml_results)
 
     # col1: rdelta, col2, mdelta, col3: mnfw, col4: mdev, col5: mgas
     # multi-threading using joblib

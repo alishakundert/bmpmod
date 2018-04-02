@@ -7,28 +7,33 @@ from density_models import *
 import plotting
 
 '''
-Functions for fitting the gas density profile.
+Functions for fitting the gas density profile
 '''
 
 
 def find_nemodeltype(ne_data, tspec_data, optplt=0):
 
     '''
-    Find the best fitting model to the gas density profile. Options include:
-    beta model, cusped beta model, double beta model,
-        and double beta model tied.
+    Fit all four gas density model options: beta model, cusped beta model,
+    tied double beta model, double beta model.
 
-    Best-fitting model is determined by the lowest reduced chi-squared, as
-    determined by levenberg marquardt python sherpa.
+    The returned model type is selected by the choosing the model that produces
+    the lowest reduced chi-squared fit, as determined by Levenberg-Marquardt
+    method in sherpa.
 
     Args:
     -----
-    optplt(int): option to plot
+    ne_data (astropy table): observed gas density profile
+      in the form established by set_prof_data()
+    tspec_data (astropy table): observed temperature profile
+      in the form established by set_prof_data()
+    optplt (int): option to plot the fit of the four density models
 
 
     Returns:
     --------
-    nemodeltype (string): best fitting model
+    nemodeltype (string): name of the ne model producing the lowest reduced
+      chi-squared
 
     '''
 
@@ -111,37 +116,35 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
     '''
     Fits gas number density profile according to selected profile model.
      The fit is performed using python sherpa with the Levenberg-Marquardt
-     method of minimizing chis-squared .
+     method of minimizing chi-squared .
 
 
     Args:
     -----
-    ne_data (astropy table): table containing profile information about
-         gas denisty of the required format:
-            ne_data['radius']: profile radius values
-            ne_data['ne']: profile gas density values
-            ne_data['ne_err']: error on gas density values
-
-    tspec_data (astropy table): table containg profile information about
-         temperature; requires formation of:
-            tspec_data['radius']: profile radius values
-            tspec_data['tspec']: profile temperature values
-            tspec_data['tspec_err']: error on temperature values
+    ne_data (astropy table): observed gas density profile
+      in the form established by set_prof_data()
+    tspec_data (astropy table): observed temperature profile
+      in the form established by set_prof_data()
 
     Returns:
     --------
-    nemodel (dictionary)
+    nemodel (dictionary): stores relevant information about the model gas
+      density profile
+        nemodel['type']: ne model type; one of the following:
+          ['single_beta','cusped_beta','double_beta_tied','double_beta']
+        nemodel['parnames']: names of the stored ne model parameters
         nemodel['parvals']: parameter values of fitted gas density model
         nemodel['parmins']: lower error bound on parvals
         nemodel['parmaxes']: upper error bound on parvals
+        nemodel['chisq']: chi-squared of fit
+        nemodel['dof']: degrees of freedom
         nemodel['rchisq']: reduced chi-squared of fit
-        nemodel['nefit']: fit of profile given radius values from tspec_data
+        nemodel['nefit']: ne model values at radial values matching
+          tspec_data (the observed temperature profiel)
 
     References:
     -----------
     Python-sherpa:    https://github.com/sherpa/
-
-
     '''
 
     # remove any existing models and data
@@ -310,10 +313,7 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
         ind = np.where(parmaxes == np.array(None))[0]
         parmaxes[ind] = float('Inf')
 
-    # set up a dictionary to contain usefule results of fit including: parvals
-    # - values of free params; parmins - min bound on error of free params;
-    # parmaxes - max bound on error of free params
-
+    # set up a dictionary to contain useful results of fit
     nemodel = {}
     nemodel['type'] = nemodeltype
     nemodel['parnames'] = parnames
@@ -323,9 +323,6 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
     nemodel['chisq'] = chisq
     nemodel['dof'] = dof
     nemodel['rchisq'] = rchisq
-
-    # calculate an array that contains the modeled gas density at the same
-    # radii positions as the tspec array and add to nemodel dictionary
 
     # if tspec_data included, calculate value of ne model at the same radius
     # positions as temperature profile

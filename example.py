@@ -30,26 +30,26 @@ logger = logging.getLogger("sherpa")
 logger.setLevel(logging.ERROR)
 
 
-#default parameters and unit conversion factors
+# default parameters and unit conversion factors
 import defaultparams.params as params
 import defaultparams.uconv as uconv
 
-#functions to read data into format used by module
+# functions to read data into format used by module
 from massmod.set_prof_data import set_ne, set_tspec, set_meta
 
-#functions to fit the gas density profile
+# functions to fit the gas density profile
 from massmod.fit_density import fitne, find_nemodeltype
 
-#functions to determine mass profile through backwards modelling
+# functions to determine mass profile through backwards modelling
 from massmod.fit_temperature import fit_ml, fit_mcmc
 
-#functions to analyze the marginalized posterior distribution
+# functions to analyze the marginalized posterior distribution
 from massmod.posterior_mcmc import calc_posterior_mcmc, samples_results
 
-#plotting functions
+# plotting functions
 from massmod.plotting import plt_mcmc_freeparam, plt_summary, plt_summary_nice
 
-#functions specifically to generate mock data from Vikhlinin+ profiles
+# functions specifically to generate mock data from Vikhlinin+ profiles
 from exampledata.vikhlinin_prof import vikhlinin_tprof, vikhlinin_neprof, gen_mock_data
 
 if __name__ == '__main__':
@@ -105,8 +105,8 @@ if __name__ == '__main__':
     samples, sampler = fit_mcmc(ne_data=ne_data,
                                 tspec_data=tspec_data,
                                 nemodel=nemodel,
-                                ml_results=ml_results,
                                 clustermeta=clustermeta,
+                                ml_results=ml_results,
                                 Ncores=3,
                                 Nwalkers=50,
                                 Nsteps=50,

@@ -19,13 +19,12 @@ import acor
 import sys
 
 import time
-##############################################################################
-##############################################################################
-##############################################################################
-
 
 '''
-Integration models for total gravitating mass in T(r)
+
+Functions for backwards modelling the cluster mass profile by fitting the
+observed temperature profile. Contains maximum likelihood and MCMC parameter
+estimation routines.
 '''
 
 
@@ -33,23 +32,25 @@ def intmodel(nemodel, rs, c, normsersic, r_arr, clustermeta):
 
     '''
 
-    Model of the form \rho_gas * M_tot * r^-2. \rho_gas is decided by the
-     selected model to fit the electron number density profile.
-     Intended to be integrated when solving for T(r).
-
-    Note: must actually be integrated later to be useful
+    Model of the form \rho_gas * M_tot * r^-2; intended to be integrated when
+    calculating Tmodel(r). \rho_gas is the model gas electron number density
+    profile and M_tot is the total gravitating mass model.
 
     Args:
     -----
-    nemodel_bfp
+    nemodel (dictionary): dictionary storing the gas density profile model as
+        output in fit_density()
     rs (float) [kpc]: scale radius of NFW profile
     c (float): concenration parameter of NFW profile
-    normsersic (float): normalization of Sersic model
-    r_arr (array) [kpc]: position values of temperature profile
+    normsersic (float): log(normalization [Msun kpc^-3]) of Sersic model for
+        stellar mass profile of cluster central galaxy
+    r_arr (array) [kpc]: radial position values of temperature profile
+    clustermeta (dictionary): dictionary of cluster and analysis info produced
+        by set_prof_data()
 
     Returns:
     --------
-    Model to be integrated when solving for T(r)
+    Function to be integrated when solving for Tmodel(r)
 
     '''
 
@@ -89,27 +90,41 @@ def intmodel(nemodel, rs, c, normsersic, r_arr, clustermeta):
 ##############################################################################
 
 
-def Tmodel_func(ne_data, tspec_data, nemodel, clustermeta, c, rs, normsersic=0):
+def Tmodel_func(ne_data,
+                tspec_data,
+                nemodel,
+                clustermeta,
+                c, rs, normsersic=0):
 
     '''
     Calculates the non-parameteric model fit to the observed temperature
-    profile. Model T(r) is calculated from Gastaldello+07 Eq. 2, which follows
+    profile. Tmodel(r) is calculated from Gastaldello+07 Eq. 2, which follows
     from solving the equation of hydrostatic equilibrium for temperature.
 
 
     Args:
     -----
-    c (float): concentration parameter of NFW profile
+    ne_data (astropy table): observed gas density profile
+      in the form established by set_prof_data()
+    tspec_data (astropy table): observed temperature profile
+      in the form established by set_prof_data()
+
+    nemodel (dictionary): dictionary storing the gas density profile model as
+        output in fit_density()
+    clustermeta (dictionary): dictionary of cluster and analysis info produced
+        by set_prof_data()
+
+
+    c (float): concenration parameter of NFW profile
     rs (float) [kpc]: scale radius of NFW profile
-    normsersic (float) [log(Msun kpc-3)]: log value of Sersic profile model
-    ne_data:
-    tspec_data:
-    nemodel:
+    normsersic (float): log(normalization [Msun kpc^-3]) of Sersic model for
+        stellar mass profile of cluster central galaxy
+
 
     Returns:
     --------
     tfit_arr (array) [keV]: model temperature profile values. Position of
-    model temperature profile is the same as the input tspec_data['radius']
+        model temperature profile is the same as the input tspec_data['radius']
 
     References:
     -----------
@@ -163,14 +178,14 @@ def Tmodel_func(ne_data, tspec_data, nemodel, clustermeta, c, rs, normsersic=0):
 ##############################################################################
 
 '''
-MCMC
+Parameter estimation routines
 '''
 
 
 # define the log likelihood function, here assumes normal distribution
 def lnlike(theta, x, y, yerr, ne_data, tspec_data, nemodel, clustermeta):
     '''
-    Log(likelihood function) comparing observed and model temperature
+    The log(likelihood function) comparing observed and model temperature
         profile values.
 
     Args:
@@ -180,14 +195,20 @@ def lnlike(theta, x, y, yerr, ne_data, tspec_data, nemodel, clustermeta):
     x (?) [?]: positions of observed temperature profile
     y (array) [keV]: observed temperature profile temperature values
     yerr (array) [keV]: errors on temperauture profile values
-    ne_data
-    tspec_data
-    nemodel
+
+    ne_data (astropy table): observed gas density profile
+      in the form established by set_prof_data()
+    tspec_data (astropy table): observed temperature profile
+      in the form established by set_prof_data()
+
+    nemodel (dictionary): dictionary storing the gas density profile model as
+        output in fit_density()
+    clustermeta (dictionary): dictionary of cluster and analysis info produced
+        by set_prof_data()
 
     Returns:
     --------
-    log of the likelood function. Will be a large value when difference
-        between observed and model fits is low.
+    log of the gaussian likelood function
 
     '''
 
@@ -268,19 +289,29 @@ def fit_ml(ne_data, tspec_data, nemodel, clustermeta,
 
     '''
     Perform maximum likelikhood parameter estimatation. Results can be used
-    as initial guess for more intensive MCMC parameter search.
+    as initial guess for more MCMC parameter estimation analysis.
 
     Args:
     -----
-    ne_data
-    tspec_data
-    nemodel
+    ne_data (astropy table): observed gas density profile
+      in the form established by set_prof_data()
+    tspec_data (astropy table): observed temperature profile
+      in the form established by set_prof_data()
+
+    nemodel (dictionary): dictionary storing the gas density profile model as
+        output in fit_density()
+    clustermeta (dictionary): dictionary of cluster and analysis info produced
+        by set_prof_data()
+
+
+    c_guess (float): starting value for estimation of c
+    c_boundmin (float): lower boundary of parameter space that c will be searched over
+    c_boundmax (float): upper boundary of parameter space that c will be searched over
 
     Returns:
     --------
     ml_results (array): results of Maximum-likelihood parameter estimation
-       of the form [c_ml,rs_ml,normsersic_ml] which are the best-fitting
-       resutls of the paramter estimation.
+       of the form [c_ml,rs_ml,normsersic_ml].
 
 
     '''
@@ -322,33 +353,45 @@ def fit_ml(ne_data, tspec_data, nemodel, clustermeta,
         return [c_ml, rs_ml]
 
 
-def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
+def fit_mcmc(ne_data, tspec_data, nemodel, clustermeta, ml_results,
              Ncores=params.Ncores,
              Nwalkers=params.Nwalkers,
              Nsteps=params.Nsteps,
              Nburnin=params.Nburnin):
 
     '''
-    Run MCMC on the free parameters of model for total gravitating mass.
-    Utilizes EMCEE.
-
+    Perform a MCMC analysis on the free parameters of the cluster total
+    gravitating mass model, utilizing the ensemble sampler of emcee.
 
     Args:
     -----
-    ne_data (astropy table): observed gas density profile  (see Notes)
-    tspec_data (astropy table): observed temperature profile  (see Notes)
-    nemodel (dictionary): best-fitting model to observed gas denisty profile (
-        see Notes)
-    ml_results (array): maximum-likelihood paramter estimation for free params
-            of the form [c_ml, rs_ml, normsersic_ml]
+
+    ne_data (astropy table): observed gas density profile
+      in the form established by set_prof_data()
+    tspec_data (astropy table): observed temperature profile
+      in the form established by set_prof_data()
+
+    nemodel (dictionary): dictionary storing the gas density profile model as
+        output in fit_density()
+    clustermeta (dictionary): dictionary of cluster and analysis info produced
+        by set_prof_data()
+
+    ml_results (array): maximum-likelihood paramter estimation for mass model
+        free params of the form [c_ml, rs_ml, normsersic_ml]
+
+    Ncores (int): number of cores overwhich to run MCMC analysis
+    Nwalkers (int): number of MCMC ensemble walkers
+    Nsteps (int): number of steps each walker takes
+    Nburnin (int): number of steps considered to be a part of the burn-in
+        period of the chain; these burn-in steps will be excluded from the
+        final MCMC parameter estiamtion
 
     Returns:
     --------
-    samples (array): MCMC sampler chain (??? - i don't know what this means)
-            of the form:
+    samples (array): MCMC samples of posterior distribution; of the form:
                 col 1: c
                 col 2: rs
-                col 3: normsersic
+                col 3: log(normsersic)
             NB: length of samples array set by Nwalkers * Nsteps
 
     References:

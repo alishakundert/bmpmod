@@ -15,6 +15,10 @@ import scipy
 from density_models import *
 from mass_models import *
 
+'''
+Plotting functions
+'''
+
 
 def seplog(n):
     '''
@@ -26,16 +30,11 @@ def seplog(n):
     return [fac, power]
 
 
-'''
-Plotting
-'''
-
-
 def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data,
                        clustermeta):
 
     '''
-    Make a corner plot from the MCMC posterior distribution of \
+    Make a corner plot from the MCMC posterior distribution of
     free-parameter values.
 
     Args:

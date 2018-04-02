@@ -10,8 +10,21 @@ def set_ne(radius,
            radius_upperbound=None):
 
     '''
-    Products correct table format for ne profile data to be used by other
-    functions in this package.
+    Establishes correct table format for gas density profile data to be used by
+    other functions in this package.
+
+    Args:
+    -----
+    radius [kpc] (array): central radial bin values of ne profile
+    ne [cm^-3] (array): electron number density values of profile
+    ne_err [cm^-3] (array): error bars on ne values
+    radius_lowerbound [kpc] (array): lower values of radial bins
+    radius_upperbound [kpc] (array): upper values of radial bins
+
+    Returns:
+    --------
+    ne_data (astropy table): table containing gas density profile information
+        with the required format for bmpmod
     '''
 
     ne_data = atpy.Table()
@@ -41,8 +54,23 @@ def set_tspec(radius,
               radius_upperbound=None):
 
     '''
-    Products correct table format for temperature profile data to be used by
+    Establishes correct table format for temperature profile data to be used by
     other functions in this package.
+
+    Args:
+    -----
+    radius [kpc] (array): central radial bin values of temperature profile
+    tspec [kev] (array): profile temperature values
+    tspec_err [keV] (array): error bars on temperature values
+    tspec_lowerbound [keV] (array): lower error bound on temperature values
+    tspec_upperbound [keV] (array): upper error bound on temperature values
+    radius_lowerbound [kpc] (array): lower values of radial bins
+    radius_upperbound [kpc] (array): upper values of radial bins
+
+    Returns:
+    --------
+    tspec_data (astropy table): table containing temperature profile information
+        with the required format for bmpmod
     '''
 
     tspec_data = atpy.Table()
@@ -78,6 +106,28 @@ def set_meta(name,
              refindex=-1,
              incl_mstar=0,
              incl_mgas=0):
+
+    '''
+    Creates dictionary with important information about the cluster and
+    analysis options.
+
+    Args:
+    -----
+    name (string): name of cluster
+    z (float): redshift of cluster
+    bcg_re (float): effective radius of cluster central galaxy
+    bcg_sersic_n (float): Sersic index of cluster central galaxy
+    refindex (int): index into the temperature profile where Tmodel= Tspec
+    incl_mstar (int): option to include the stellar mass of the central galaxy
+        into the total gravitating mass model
+    incl_mgas (int): option to include the mass of the ICM into the total
+        gravitating mass model
+
+    Returns:
+    --------
+    clustermeta (dictionary): dictionary of cluster and analysis info stored
+        into the proper format to be used by bmpmod functions
+    '''
 
     clustermeta = {}
     clustermeta['name'] = name

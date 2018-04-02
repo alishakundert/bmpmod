@@ -24,10 +24,13 @@ def calc_rdelta_p(row, nemodel, clustermeta):
 
     Args:
     -----
-    c (float): mass concentration prameter of NFW profile
-    rs (float) [kpc]: scale radius of NFW profile
-    normsersic: normalization of stellar mass profile
-    nemodel_bfp: parameters describing gas density profile
+    row (array): row refers to a single row from the MCMC samples array, i.e.
+        a unique set of [c, rs, log(normsersic)] values
+
+    nemodel (dictionary): dictionary storing the gas density profile model as
+        output in fit_density()
+    clustermeta (dictionary): dictionary of cluster and analysis info produced
+        by set_prof_data()
 
     Returns:
     --------

@@ -8,7 +8,7 @@ from density_models import *
 from gen import *
 
 '''
-Mass models
+Mass models for DM, gas, stars
 '''
 
 
@@ -25,18 +25,16 @@ def nfw_mass_model(r, c, rs, z):
     rs (float) [kpc]: scale radius
 
 
-
     Returns:
     --------
-    M (float or array) [kg]: mass within radius (or radii),
-    according to the NFW profile
+    M (float or array) [Msun]: mass within radius (or radii),
+        according to the NFW profile
 
 
     References:
     ----------
     Navarro, J. F., Frenk, C. S., & White, S. D. M. 1996, ApJ, 462, 563
     Navarro, J. F., Frenk, C. S., & White, S. D. M. 1997, ApJ, 490, 493
-
 
     '''
 
@@ -61,27 +59,24 @@ def nfw_mass_model(r, c, rs, z):
     return M
 
 
-def sersic_mass_model(x, normsersic, cluster):
+def sersic_mass_model(x, normsersic, clustermeta):
 
     '''
-    Calculates the stellar mass according to the 3D density profile of the form
-     of the deprojected Sersic profile (Lima Neto+ 1999. Eq 20).
+    Calculates the stellar mass of the cluster central galaxy according to the
+        3D density profile of the form of the deprojected Sersic profile
+        (Lima Neto+ 1999. Eq 20).
 
     Args:
     -----
     x (array) [kpc]: array of radius values
-    normsersic (float): log(normalization [Msun kpc^-3])
-
-    #in params file:
-    #
-    #n (float) [unitless]: Sersic index
-    #re (float) [kpc]: effective radius
-    #
+    normsersic (float): log(normalization [Msun kpc^-3]) of Sersic profile
+    clustermeta (dictionary): dictionary of cluster and analysis info produced
+        by set_prof_data()
 
 
     Returns:
     --------
-    M [Msun] (float or array): mass within radius (or radii)
+    M [Msun] (float or array): central galaxy stellar mass within radius (or radii)
 
 
     References:
@@ -90,32 +85,35 @@ def sersic_mass_model(x, normsersic, cluster):
 
     '''
 
-    nu = cluster['bcg_sersic_n']**-1.
+    nu = clustermeta['bcg_sersic_n']**-1.
 
     p = 1.-(0.6097*nu)+(0.00563*(nu**2.))  # limaneto1999
-    a = cluster['bcg_re']*np.exp(-((0.6950-np.log(nu))/nu)-0.1789)
+    a = clustermeta['bcg_re']*np.exp(-((0.6950-np.log(nu))/nu)-0.1789)
     f = np.exp(-(((0.6950-np.log(nu))/nu)-0.1789))
 
-    return (4*np.pi*(cluster['bcg_re']**3.)*(f**3.)*(10.**normsersic)/nu) \
+    return (4*np.pi*(clustermeta['bcg_re']**3.)*(f**3.)*(10.**normsersic)/nu) \
         * scipy.special.gamma((3-p)/nu) \
-        * scipy.special.gammainc((3-p)/nu, (f**-nu)*(x/cluster['bcg_re'])**nu)
+        * scipy.special.gammainc((3-p)/nu, (f**-nu)*(x/clustermeta['bcg_re'])**nu)
     # [Msun]
-
-######################################################################
-######################################################################
-########################################################################
-
-
-'''
-gas mass models
-'''
 
 
 def gas_mass_model(x, nemodel):
 
-    # Mgas = \int 4*pi*r^2 rho_gas dr
+    '''
+    Calculates the ICM gas mass within some radius (or radii) by integrating
+        the gas denisty profile:
+            Mgas = \int 4*pi*r^2 rho_gas dr
 
-    # rho_gas comes from the density model previously fit
+    Args:
+    -----
+    x (array) [kpc]: array of radius values
+    nemodel (dictionary): dictionary storing the gas density profile model as
+        output in fit_density()
+
+    Returns:
+    --------
+    mgas [Msun] (float or array): ICM gas mass within radius (or radii)
+    '''
 
     if nemodel['type'] == 'single_beta':
 
