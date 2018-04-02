@@ -35,19 +35,19 @@ import defaultparams.params as params
 import defaultparams.uconv as uconv
 
 # functions to read data into format used by module
-from massmod.set_prof_data import set_ne, set_tspec, set_meta
+from bmpmod.set_prof_data import set_ne, set_tspec, set_meta
 
 # functions to fit the gas density profile
-from massmod.fit_density import fitne, find_nemodeltype
+from bmpmod.fit_density import fitne, find_nemodeltype
 
 # functions to determine mass profile through backwards modelling
-from massmod.fit_temperature import fit_ml, fit_mcmc
+from bmpmod.fit_massprof import fit_ml, fit_mcmc
 
 # functions to analyze the marginalized posterior distribution
-from massmod.posterior_mcmc import calc_posterior_mcmc, samples_results
+from bmpmod.posterior_mcmc import calc_posterior_mcmc, samples_results
 
 # plotting functions
-from massmod.plotting import plt_mcmc_freeparam, plt_summary, plt_summary_nice
+from bmpmod.plotting import plt_mcmc_freeparam, plt_summary, plt_summary_nice
 
 # functions specifically to generate mock data from Vikhlinin+ profiles
 from exampledata.vikhlinin_prof import vikhlinin_tprof, vikhlinin_neprof, gen_mock_data
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     # select any cluster ID from the Vikhlinin+ paper
     clusterID = 'A262'
 
-    clustermeta, ne_data, tspec_data, nemodel_vikh, tmodel_vikh \
+    clustermeta, ne_data, tspec_data, nemodel_vikhlinin, tmodel_vikhlinin \
         = gen_mock_data(clusterID=clusterID,
                         N_ne=25,
                         N_temp=12,
@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     # fit all four ne moels and return the model with the lowest
     # reduced chi-squared as nemodeltype
-    nemodeltype, fig = find_nemodeltype(ne_data=ne_data,
+    nemodeltype, fig1 = find_nemodeltype(ne_data=ne_data,
                                         tspec_data=tspec_data,
                                         optplt=1)
     print 'model with lowest reduced chi-squared:', nemodeltype
@@ -108,8 +108,8 @@ if __name__ == '__main__':
                                 clustermeta=clustermeta,
                                 ml_results=ml_results,
                                 Ncores=3,
-                                Nwalkers=50,
-                                Nsteps=50,
+                                Nwalkers=20,
+                                Nsteps=20,
                                 Nburnin=10)
 
     # calculate R500 and M(R500) for each step of MCMC chain
@@ -136,14 +136,15 @@ if __name__ == '__main__':
 
     # Corner plot of marginalized posterior distribution of free params
     # from MCMC
-    fig1 = plt_mcmc_freeparam(mcmc_results=mcmc_results,
+    fig2 = plt_mcmc_freeparam(mcmc_results=mcmc_results,
                               samples=samples,
                               sampler=sampler,
                               tspec_data=tspec_data,
                               clustermeta=clustermeta)
 
+
     # Summary plot: density profile, temperature profile, mass profile
-    fig2, ax1, ax2 = plt_summary(ne_data=ne_data,
+    fig3, ax1, ax2 = plt_summary(ne_data=ne_data,
                                  tspec_data=tspec_data,
                                  nemodel=nemodel,
                                  mcmc_results=mcmc_results,
@@ -152,13 +153,13 @@ if __name__ == '__main__':
     # add vikhlinin model to density plot
     xplot = np.logspace(np.log10(min(ne_data['radius'])),
                         np.log10(max(ne_data['radius'])), 1000)
-    ax1.plot(xplot, vikh_neprof(nemodel_vikh, xplot), 'k')
+    ax1.plot(xplot, vikhlinin_neprof(nemodel_vikhlinin, xplot), 'k')
     # plt.xlim(xmin=min(ne_data['radius']))
 
     # add viklinin model to temperature plot
     xplot = np.logspace(np.log10(min(tspec_data['radius'])),
                         np.log10(max(tspec_data['radius'])), 1000)
-    ax2.plot(xplot, vikh_tprof(tmodel_vikh, xplot), 'k-')
+    ax2.plot(xplot, vikhlinin_tprof(tmodel_vikhlinin, xplot), 'k-')
 
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.show()

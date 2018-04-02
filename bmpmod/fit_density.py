@@ -3,7 +3,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from density_models import *
+from mod_gasdensity import *
 import plotting
 
 '''

@@ -5,15 +5,15 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-import fit_temperature
+import mod_temperature
 
 import defaultparams.uconv as uconv
 import defaultparams.cosmology as cosmo
 
 import scipy
 
-from density_models import *
-from mass_models import *
+from mod_gasdensity import *
+from mod_mass import *
 
 '''
 Plotting functions
@@ -156,8 +156,8 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
             of DM, stars, gas
     '''
 
-    fig2 = plt.figure(2, (9, 9))
-    plt.figure(2)
+    fig3 = plt.figure(3, (9, 9))
+    plt.figure(3)
 
     matplotlib.rcParams['font.size'] = 10
     matplotlib.rcParams['axes.labelsize'] = 12
@@ -170,7 +170,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     '''
     gas density
     '''
-    ax1 = fig2.add_subplot(2, 2, 1)
+    ax1 = fig3.add_subplot(2, 2, 1)
 
     plt.loglog(ne_data['radius'], ne_data['ne'], 'o', color='#707070',
                markersize=2)
@@ -195,7 +195,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 
     if clustermeta['incl_mstar'] == 1:
         tfit_arr \
-            = fit_temperature.Tmodel_func(
+            = mod_temperature.Tmodel_func(
                 ne_data=ne_data,
                 tspec_data=tspec_data,
                 nemodel=nemodel,
@@ -206,7 +206,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 
     elif clustermeta['incl_mstar'] == 0:
         tfit_arr \
-            = fit_temperature.Tmodel_func(
+            = mod_temperature.Tmodel_func(
                 ne_data=ne_data,
                 tspec_data=tspec_data,
                 nemodel=nemodel,
@@ -214,7 +214,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
                 c=mcmc_results['c'][0],
                 rs=mcmc_results['rs'][0])
 
-    ax2 = fig2.add_subplot(2, 2, 2)
+    ax2 = fig3.add_subplot(2, 2, 2)
 
     plt.semilogx(tspec_data['radius'], tspec_data['tspec'], 'bo')
 
@@ -242,7 +242,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     OVERDENSITY RADIUS: MASS PROFILE
     '''
 
-    ax3 = fig2.add_subplot(2, 2, 3)
+    ax3 = fig3.add_subplot(2, 2, 3)
 
     xplot = np.logspace(np.log10(1.), np.log10(900.), 100)
 
@@ -365,7 +365,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
             + '} \ M_{\odot}$',
             (0.55, 0.05), xycoords='figure fraction')
 
-    return fig2, ax1, ax2
+    return fig3, ax1, ax2
 
 #############################################################################
 #############################################################################
@@ -572,7 +572,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 
     Results:
     --------
-    fig3 (plot):
+    fig4 (plot):
          subfig 1: plot of observed gas density profile and fitted gas density
              profile
          subfig 2: plot of observed temperature profile and model temperature
@@ -581,8 +581,8 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
              of DM, stars, gas
     '''
 
-    fig3 = plt.figure(3, (12, 4))
-    plt.figure(3)
+    fig4 = plt.figure(4, (12, 4))
+    plt.figure(4)
 
     matplotlib.rcParams['font.size'] = 10
     matplotlib.rcParams['axes.labelsize'] = 12
@@ -593,7 +593,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     '''
     gas density
     '''
-    ax = fig3.add_subplot(1, 3, 1)
+    ax = fig4.add_subplot(1, 3, 1)
 
     plt.loglog(ne_data['radius'], ne_data['ne'], 'o', color='#707070',
                markersize=2)
@@ -618,7 +618,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     '''
     if clustermeta['incl_mstar'] == 1:
         tfit_arr \
-            = fit_temperature.Tmodel_func(
+            = mod_temperature.Tmodel_func(
                 ne_data=ne_data,
                 tspec_data=tspec_data,
                 nemodel=nemodel,
@@ -629,7 +629,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 
     elif clustermeta['incl_mstar'] == 0:
         tfit_arr \
-            = fit_temperature.Tmodel_func(
+            = mod_temperature.Tmodel_func(
                 ne_data=ne_data,
                 tspec_data=tspec_data,
                 nemodel=nemodel,
@@ -637,7 +637,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
                 c=mcmc_results['c'][0],
                 rs=mcmc_results['rs'][0])
 
-    ax = fig3.add_subplot(1, 3, 2)
+    ax = fig4.add_subplot(1, 3, 2)
 
     plt.semilogx(tspec_data['radius'], tspec_data['tspec'], 'bo')
 
@@ -662,7 +662,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     OVERDENSITY RADIUS: MASS PROFILE
     '''
 
-    ax = fig3.add_subplot(1, 3, 3)
+    ax = fig4.add_subplot(1, 3, 3)
 
     xplot = np.logspace(np.log10(1.), np.log10(900.), 100)
 
@@ -699,4 +699,4 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     plt.xlabel('r [kpc]')
     plt.ylabel('mass [$M_{\odot}$]')
 
-    return fig3
+    return fig4

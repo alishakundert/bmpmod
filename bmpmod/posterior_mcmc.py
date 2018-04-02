@@ -2,7 +2,7 @@ import defaultparams.params as params
 
 from joblib import Parallel, delayed
 
-from mass_models import *
+from mod_mass import *
 from gen import *
 
 import scipy

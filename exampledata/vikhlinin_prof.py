@@ -4,7 +4,7 @@ import defaultparams.params as params
 
 import astropy.table as atpy
 
-from massmod.set_prof_data import set_ne, set_tspec, set_meta
+from bmpmod.set_prof_data import set_ne, set_tspec, set_meta
 
 from astropy.cosmology import FlatLambdaCDM
 import astropy.units as u
