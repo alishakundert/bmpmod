@@ -1,11 +1,14 @@
 import sherpa.ui as ui
 import numpy as np
 
-import matplotlib
 import matplotlib.pyplot as plt
 
 from density_models import *
 import plotting
+
+'''
+Functions for fitting the gas density profile.
+'''
 
 
 def find_nemodeltype(ne_data, tspec_data, optplt=0):
@@ -29,71 +32,71 @@ def find_nemodeltype(ne_data, tspec_data, optplt=0):
 
     '''
 
-    opt_models = ['single_beta', 'cusped_beta', 'double_beta_tied', 'double_beta']
+    opt_models = ['single_beta', 'cusped_beta',
+                  'double_beta_tied', 'double_beta']
+
     opt_rchisq = []
 
-    if optplt==1:
+    if optplt == 1:
         fig1 = plt.figure(1, (8, 8))
         fig1.clf()
 
-        maxy=0
-        miny=999
-        
+        maxy = 0
+        miny = 999
+
     for ii in range(0, len(opt_models)):
         nemodel = fitne(ne_data=ne_data, nemodeltype=opt_models[ii],
                         tspec_data=tspec_data)
         opt_rchisq.append(nemodel['rchisq'])
 
+        if optplt == 1:
 
-        if optplt==1:
-            
-            if ii==0:
-                ax0=fig1.add_subplot(2,2,ii+1)
+            if ii == 0:
+                ax0 = fig1.add_subplot(2, 2, ii+1)
                 ax0.set_xscale("log", nonposx='clip')
                 ax0.set_yscale("log", nonposy='clip')
-            if ii==1:
-                ax1=fig1.add_subplot(2,2,ii+1)
+            if ii == 1:
+                ax1 = fig1.add_subplot(2, 2, ii+1)
                 ax1.set_xscale("log", nonposx='clip')
-                ax1.set_yscale("log", nonposy='clip')                
-            if ii==2:
-                ax2=fig1.add_subplot(2,2,ii+1)
+                ax1.set_yscale("log", nonposy='clip')
+            if ii == 2:
+                ax2 = fig1.add_subplot(2, 2, ii+1)
                 ax2.set_xscale("log", nonposx='clip')
-                ax2.set_yscale("log", nonposy='clip')               
-            if ii==3:
-                ax3=fig1.add_subplot(2,2,ii+1)
+                ax2.set_yscale("log", nonposy='clip')
+            if ii == 3:
+                ax3 = fig1.add_subplot(2, 2, ii+1)
                 ax3.set_xscale("log", nonposx='clip')
                 ax3.set_yscale("log", nonposy='clip')
 
-            #best-fitting density model
-            plotting.plt_densityprof(nemodel,annotations=1)
+            # best-fitting density model
+            plotting.plt_densityprof(nemodel, annotations=1)
 
-            #data
+            # data
             plt.errorbar(ne_data['radius'], ne_data['ne'],
-                         xerr=[ne_data['radius_lowerbound'], 
+                         xerr=[ne_data['radius_lowerbound'],
                                ne_data['radius_upperbound']],
-                         yerr=ne_data['ne_err'], 
+                         yerr=ne_data['ne_err'],
                          marker='o', markersize=2,
                          linestyle='none', color='b')
 
-            plt.annotate(str(opt_models[ii]),(0.55,0.9),xycoords='axes fraction')
-
+            plt.annotate(str(opt_models[ii]), (0.55, 0.9),
+                         xycoords='axes fraction')
 
             plt.xlabel('r [kpc]')
             plt.ylabel('$n_{e}$ [cm$^{-3}$]')
-            
-            ymin,ymax=plt.ylim()
-            if ymax>maxy:
-                maxy=ymax
-            if ymin<miny:
-                miny=ymin
 
-    
-    if optplt==1:
-        
-        ax0.set_ylim(miny,maxy)
-        ax1.set_ylim(miny,maxy)
-        ax2.set_ylim(miny,maxy)
-        ax3.set_ylim(miny,maxy)
+            ymin, ymax = plt.ylim()
+            if ymax > maxy:
+                maxy = ymax
+            if ymin < miny:
+                miny = ymin
+
+    if optplt == 1:
+
+        ax0.set_ylim(miny, maxy)
+        ax1.set_ylim(miny, maxy)
+        ax2.set_ylim(miny, maxy)
+        ax3.set_ylim(miny, maxy)
 
         plt.tight_layout()
 
@@ -101,17 +104,6 @@ def find_nemodeltype(ne_data, tspec_data, optplt=0):
     ind = np.where(opt_rchisq == min(opt_rchisq))[0][0]
 
     return opt_models[ind], fig1
-
-#############################################################################
-#############################################################################
-############################################################################
-
-
-
-
-'''
-Fitting function for density profile
-'''
 
 
 def fitne(ne_data, nemodeltype, tspec_data=None):
@@ -152,9 +144,9 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
 
     '''
 
-    #remove any existing models and data
+    # remove any existing models and data
     ui.clean()
-    
+
     # load data
     ui.load_arrays(1,
                    np.array(ne_data['radius']),
@@ -163,7 +155,7 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
 
     # set guess and boundaries on params given selected model
 
-    if nemodeltype == 'single_beta':  
+    if nemodeltype == 'single_beta':
 
         # param estimate
         betaguess = 0.6
@@ -176,7 +168,6 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
         ui.set_source(beta1d)  # creates model
         ui.set_full_model(beta1d)
 
-        
         # set parameter values
         ui.set_par(beta1d.ne0, ne0guess,
                    min=0,
@@ -255,7 +246,6 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
                    min=0.1,
                    max=1.)
 
-
     if nemodeltype == 'double_beta_tied':
 
         # param estimate
@@ -264,8 +254,7 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
         betaguess1 = 0.6
 
         ne0guess2 = 0.01*max(ne_data['ne'])
-        rcguess2 = 100. 
-
+        rcguess2 = 100.
 
         # double beta model
         ui.load_user_model(doublebetamodel_tied, "doublebeta1d_tied")
@@ -335,7 +324,6 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
     nemodel['dof'] = dof
     nemodel['rchisq'] = rchisq
 
-
     # calculate an array that contains the modeled gas density at the same
     # radii positions as the tspec array and add to nemodel dictionary
 
@@ -364,6 +352,4 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
 
         nemodel['nefit'] = nefit_arr
 
-
     return nemodel
-

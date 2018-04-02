@@ -6,6 +6,7 @@ import defaultparams.uconv as uconv
 
 from density_models import *
 from gen import *
+
 '''
 Mass models
 '''
@@ -54,8 +55,8 @@ def nfw_mass_model(r, c, rs, z):
     # nb: removed OmegaM here because of eq 1 ettori2011
 
     # mass profile
-    #M = 4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x  # [kg]
-    M=4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x/uconv.Msun #[Msun]
+    # M = 4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x  # [kg]
+    M = 4.*np.pi*rho_crit*delta_char*(rs**3.)*func_x/uconv.Msun  # [Msun]
 
     return M
 
@@ -98,7 +99,7 @@ def sersic_mass_model(x, normsersic, cluster):
     return (4*np.pi*(cluster['bcg_re']**3.)*(f**3.)*(10.**normsersic)/nu) \
         * scipy.special.gamma((3-p)/nu) \
         * scipy.special.gammainc((3-p)/nu, (f**-nu)*(x/cluster['bcg_re'])**nu)
-    #[Msun]
+    # [Msun]
 
 ######################################################################
 ######################################################################
@@ -108,11 +109,13 @@ def sersic_mass_model(x, normsersic, cluster):
 '''
 gas mass models
 '''
-def gas_mass_model(x,nemodel):
-    
-    #Mgas = \int 4*pi*r^2 rho_gas dr
 
-    #rho_gas comes from the density model previously fit
+
+def gas_mass_model(x, nemodel):
+
+    # Mgas = \int 4*pi*r^2 rho_gas dr
+
+    # rho_gas comes from the density model previously fit
 
     if nemodel['type'] == 'single_beta':
 
@@ -120,10 +123,10 @@ def gas_mass_model(x,nemodel):
         rc = nemodel['parvals'][1]  # [kpc]
         beta = nemodel['parvals'][2]  # [unitless]
 
-
-        mgas=(4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
-            *((ne0*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta, 5./2., -(x/rc)**2.))
-        #[msun]
+        mgas = (4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+            * ((ne0*(uconv.cm_kpc**-3.))
+               * scipy.special.hyp2f1(3./2., (3./2.)*beta, 5./2., -(x/rc)**2.))
+        # [Msun]
 
     if nemodel['type'] == 'cusped_beta':
 
@@ -132,11 +135,11 @@ def gas_mass_model(x,nemodel):
         beta = nemodel['parvals'][2]  # [unitless]
         alpha = nemodel['parvals'][3]  # [unitless]
 
-
-        mgas=(4./(3.-alpha))*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
-              * (ne0*(uconv.cm_kpc**-3.))*((x/rc)**-alpha)*scipy.special.hyp2f1((3.-alpha)/2.,(3./2.)*beta, 1.+((3.-alpha)/2.), -(x/rc)**2.)
-        #[msun]
-
+        mgas = (4./(3.-alpha))*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+               * (ne0*(uconv.cm_kpc**-3.))*((x/rc)**-alpha) \
+               * scipy.special.hyp2f1((3.-alpha)/2., (3./2.)*beta,
+                                      1.+((3.-alpha)/2.), -(x/rc)**2.)
+        # [Msun]
 
     if nemodel['type'] == 'double_beta_tied':
 
@@ -148,10 +151,14 @@ def gas_mass_model(x,nemodel):
         rc2 = nemodel['parvals'][4]  # [kpc]
         beta2 = beta1  # TIED TO BETA1!!!!
 
-        mgas=(4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
-            *(((ne01*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta1, 5./2., -(x/rc1)**2.)) \
-              +((ne02*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta2, 5./2., -(x/rc2)**2.)))
-        #[msun]
+        mgas = (4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+               * (((ne01*(uconv.cm_kpc**-3.))
+                   * scipy.special.hyp2f1(3./2., (3./2.)*beta1,
+                                          5./2., -(x/rc1)**2.))
+                  + ((ne02*(uconv.cm_kpc**-3.))
+                     * scipy.special.hyp2f1(3./2., (3./2.)*beta2,
+                                            5./2., -(x/rc2)**2.)))
+        # [Msun]
 
     if nemodel['type'] == 'double_beta':
 
@@ -161,11 +168,15 @@ def gas_mass_model(x,nemodel):
 
         ne02 = nemodel['parvals'][3]  # [cm^-3]
         rc2 = nemodel['parvals'][4]  # [kpc]
-        beta2 =  nemodel['parvals'][5] 
+        beta2 = nemodel['parvals'][5]
 
-        mgas=(4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
-            *(((ne01*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta1, 5./2., -(x/rc1)**2.)) \
-              +((ne02*(uconv.cm_kpc**-3.))*scipy.special.hyp2f1(3./2., (3./2.)*beta2, 5./2., -(x/rc2)**2.)))
-        #[msun]
+        mgas = (4./3.)*np.pi*(x**3.)*(params.mu_e*uconv.mA/uconv.Msun) \
+               * (((ne01*(uconv.cm_kpc**-3.))
+                   * scipy.special.hyp2f1(3./2., (3./2.)*beta1,
+                                          5./2., -(x/rc1)**2.))
+                  + ((ne02*(uconv.cm_kpc**-3.))
+                     * scipy.special.hyp2f1(3./2., (3./2.)*beta2,
+                                            5./2., -(x/rc2)**2.)))
+        # [Msun]
 
     return mgas

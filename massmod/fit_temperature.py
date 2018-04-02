@@ -1,14 +1,5 @@
 import numpy as np
 
-import astropy
-import astropy.table as atpy
-from astropy import cosmology
-from astropy.cosmology import FlatLambdaCDM
-import astropy.units as u
-
-import sherpa
-import sherpa.ui as ui
-
 import scipy
 import scipy.integrate
 import scipy.optimize as op
@@ -63,33 +54,32 @@ def intmodel(nemodel, rs, c, normsersic, r_arr, clustermeta):
     '''
 
     Mtot = nfw_mass_model(r_arr, c, rs, clustermeta['z'])
-    if clustermeta['incl_mstar']==1:
-        Mtot+=sersic_mass_model(r_arr, normsersic, clustermeta)
-    if clustermeta['incl_mgas']==1:
-        Mtot+=gas_mass_model(r_arr,nemodel)
+    if clustermeta['incl_mstar'] == 1:
+        Mtot += sersic_mass_model(r_arr, normsersic, clustermeta)
+    if clustermeta['incl_mgas'] == 1:
+        Mtot += gas_mass_model(r_arr, nemodel)
 
     if nemodel['type'] == 'single_beta':
         return (betamodel(nemodel['parvals'], r_arr)
-                *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
+                * (1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
             * (Mtot) \
             / (r_arr**2.)
 
-
     if nemodel['type'] == 'cusped_beta':
         return (cuspedbetamodel(nemodel['parvals'], r_arr)
-                *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
+                * (1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
             * (Mtot) \
             / (r_arr**2.)
 
     if nemodel['type'] == 'double_beta':
         return (doublebetamodel(nemodel['parvals'], r_arr)
-                *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
+                * (1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
             * (Mtot) \
             / (r_arr**2.)
 
     if nemodel['type'] == 'double_beta_tied':
         return (doublebetamodel_tied(nemodel['parvals'], r_arr)
-                *(1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
+                * (1./uconv.Msun)*(uconv.cm_kpc**-3.)) \
             * (Mtot) \
             / (r_arr**2.)
 
@@ -99,7 +89,7 @@ def intmodel(nemodel, rs, c, normsersic, r_arr, clustermeta):
 ##############################################################################
 
 
-def Tmodel_func(ne_data, tspec_data, nemodel, clustermeta,c, rs, normsersic=0):
+def Tmodel_func(ne_data, tspec_data, nemodel, clustermeta, c, rs, normsersic=0):
 
     '''
     Calculates the non-parameteric model fit to the observed temperature
@@ -152,11 +142,13 @@ def Tmodel_func(ne_data, tspec_data, nemodel, clustermeta,c, rs, normsersic=0):
                                      clustermeta=clustermeta)
 
         finfac_t = ((params.mu*uconv.mA*uconv.G)
-                    /(ne_selected*(uconv.cm_m**-3.)))  # [m6 kg-1 s-2]
+                    / (ne_selected*(uconv.cm_m**-3.)))  # [m6 kg-1 s-2]
 
         tfit_r = (tspec_ref*ne_ref/ne_selected) \
-                 - (uconv.joule_kev*finfac_t*(uconv.Msun_kg**2.)*(uconv.kpc_m**-4.)
-                    * scipy.integrate.quad(intfunc, radius_ref, radius_selected)[0])
+                 - (uconv.joule_kev*finfac_t*(uconv.Msun_kg**2.)
+                    * (uconv.kpc_m**-4.)
+                    * scipy.integrate.quad(intfunc, radius_ref,
+                                           radius_selected)[0])
         # [kev]
 
         # print scipy.integrate.quad(intfunc,radius_ref,radius_selected)
@@ -164,10 +156,6 @@ def Tmodel_func(ne_data, tspec_data, nemodel, clustermeta,c, rs, normsersic=0):
         tfit_arr.append(tfit_r)
 
     return tfit_arr
-
-
-
-
 
 
 ##############################################################################
@@ -203,15 +191,23 @@ def lnlike(theta, x, y, yerr, ne_data, tspec_data, nemodel, clustermeta):
 
     '''
 
-    if clustermeta['incl_mstar']==1:
+    if clustermeta['incl_mstar'] == 1:
         c, rs, normsersic = theta
-    elif clustermeta['incl_mstar']==0:
+    elif clustermeta['incl_mstar'] == 0:
         c, rs = theta
-        normsersic = 0 
+        normsersic = 0
 
-    model = Tmodel_func(ne_data=ne_data, tspec_data=tspec_data, nemodel=nemodel, clustermeta=clustermeta,c=c, rs=rs, normsersic=normsersic)
+    model = Tmodel_func(ne_data=ne_data,
+                        tspec_data=tspec_data,
+                        nemodel=nemodel,
+                        clustermeta=clustermeta,
+                        c=c,
+                        rs=rs,
+                        normsersic=normsersic)
 
-    return -0.5*np.sum((((y-model)**2.)/(yerr**2.)) + np.log(2.*np.pi*(yerr**2.)))
+    return -0.5*np.sum((((y-model)**2.)/(yerr**2.))
+                       + np.log(2.*np.pi*(yerr**2.)))
+
 
 # log-prior
 def lnprior(theta,
@@ -231,15 +227,16 @@ def lnprior(theta,
     ----
     theta (array): current values of free-paramters; set by WHICH FUNCTION?
     '''
-    if len(theta)==3:
+    if len(theta) == 3:
         c, rs, normsersic = theta
 
-        if c_boundmin < c < c_boundmax and rs_boundmin < rs < rs_boundmax and normsersic_boundmin < normsersic < normsersic_boundmax:
+        if c_boundmin < c < c_boundmax \
+           and rs_boundmin < rs < rs_boundmax \
+           and normsersic_boundmin < normsersic < normsersic_boundmax:
             return 0.0
         return -np.inf
 
-
-    elif len(theta)==2:
+    elif len(theta) == 2:
         c, rs = theta
 
         if c_boundmin < c < c_boundmax and rs_boundmin < rs < rs_boundmax:
@@ -290,41 +287,39 @@ def fit_ml(ne_data, tspec_data, nemodel, clustermeta,
 
     nll = lambda *args: -lnlike(*args)
 
-
-    if clustermeta['incl_mstar']==1:
+    if clustermeta['incl_mstar'] == 1:
 
         result = op.minimize(nll, [c_guess, rs_guess, normsersic_guess],
                              args=(tspec_data['radius'], tspec_data['tspec'],
-                                   tspec_data['tspec_err'], ne_data, tspec_data,
-                                   nemodel, clustermeta),
+                                   tspec_data['tspec_err'], ne_data,
+                                   tspec_data, nemodel, clustermeta),
                              bounds=((c_boundmin, c_boundmax),
                                      (rs_boundmin, rs_boundmax),
-                                     (normsersic_boundmin, normsersic_boundmax)))
-        
+                                     (normsersic_boundmin,
+                                      normsersic_boundmax)))
+
         c_ml, rs_ml, normsersic_ml = result["x"]
         print 'MLE results'
         print 'MLE: c=', c_ml
         print 'MLE: rs=', rs_ml
         print 'MLE: normsersic=', normsersic_ml
-        
+
         return [c_ml, rs_ml, normsersic_ml]
 
-
-    elif clustermeta['incl_mstar']==0:
+    elif clustermeta['incl_mstar'] == 0:
         result = op.minimize(nll, [c_guess, rs_guess],
                              args=(tspec_data['radius'], tspec_data['tspec'],
-                                   tspec_data['tspec_err'], ne_data, tspec_data,
-                                   nemodel, clustermeta),
+                                   tspec_data['tspec_err'], ne_data,
+                                   tspec_data, nemodel, clustermeta),
                              bounds=((c_boundmin, c_boundmax),
                                      (rs_boundmin, rs_boundmax)))
-        
+
         c_ml, rs_ml = result["x"]
         print 'MLE results'
         print 'MLE: c=', c_ml
         print 'MLE: rs=', rs_ml
-        
-        return [c_ml, rs_ml]
 
+        return [c_ml, rs_ml]
 
 
 def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
@@ -364,13 +359,12 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
 
     # initialize walkers - result comes from ML fit before
 
-    if clustermeta['incl_mstar']==1:
+    if clustermeta['incl_mstar'] == 1:
         ndim, nwalkers = 3, Nwalkers
-    elif clustermeta['incl_mstar']==0:
+    elif clustermeta['incl_mstar'] == 0:
         ndim, nwalkers = 2, Nwalkers
 
     pos = [ml_results + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
-
 
     # sampler
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob,
@@ -382,42 +376,30 @@ def fit_mcmc(ne_data, tspec_data, nemodel, ml_results, clustermeta,
                                     threads=Ncores)
     # WHY ARE THE ARGS THE WAY THEY ARE???
 
+    # # run ensemble sampler for given number of steps
+    # start=time.time()
+    # sampler.run_mcmc(pos, Nsteps)
+    # end=time.time()
+    # print end-start
 
-    ## run ensemble sampler for given number of steps
-    #start=time.time()
-    #sampler.run_mcmc(pos, Nsteps)
-    #end=time.time()
-    #print end-start
-
-    
-    #start=time.time()
-    #begin testing
     for i, result in enumerate(sampler.sample(pos, iterations=Nsteps)):
         if 100.*((float(i+1.))/Nsteps) % 10 == 0:
             print 'MCMC progress: '+"{0:5.1%}".format(float(i+1.) / Nsteps)
-    #end testing
-    #end=time.time()
-    #print end-start
-
 
     samples = sampler.chain[:, Nburnin:, :].reshape((-1, ndim))
     # length of samples = walkers*steps
 
+    # check acceptance rate: goal between 0.2-0.5
+    # print 'acceptance rate of walkers:'
+    # print sampler.acceptance_fraction
 
-    #check acceptance rate: goal between 0.2-0.5
-    #print 'acceptance rate of walkers:'
-    #print sampler.acceptance_fraction
- 
-
-    #check autocorrelation time
+    # check autocorrelation time
     try:
-        print 'autocorrelation time:',sampler.acor
+        print 'autocorrelation time:', sampler.acor
     except:
         print 'autocorrelation time cannot be calculated'
     print ''
 
-    #print emcee.autocorr.integrated_time()
+    # print emcee.autocorr.integrated_time()
 
     return samples, sampler
-
-
