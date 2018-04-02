@@ -41,7 +41,7 @@ def plt_mcmc_freeparam(mcmc_results, samples, sampler, tspec_data,
     -----
     mcmc_results (array):
     samples (array): posterior MCMC distribution of free-param vals
-    tspec_data (astropy table): table containg profile information about
+    tspec_data (astropy table): table containing profile information about
         temperature
 
     Results:
@@ -136,14 +136,13 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     Args:
     -----
     ne_data (astropy table): table containing profile information about
-        gas denisty
-    tspec_data (astropy table): table containg profile information about
+        gas density
+    tspec_data (astropy table): table containing profile information about
         temperature
     nemodel (dictionary): info about ne profile fit including param values
         and errors
     mcmc_results (dictionary): values and errors of free-params of MCMC as
-        well as quantites calculated from the posterior MCMC distribution
-
+        well as quantities calculated from the posterior MCMC distribution
 
 
     Results:
@@ -376,13 +375,13 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 def plt_densityprof(nemodel, annotations=0):
 
     '''
-    Helper function to plot the best-fitting model of the gas density profile.
+    Helper function to plot the input gas density profile model.
 
     Args:
     -----
     nemodel (dictionary): info about ne profile fit including
         param values and errors
-
+    annotations: option to add ne model parameter values and errors to plot
 
     Results:
     --------
@@ -562,14 +561,13 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     Args:
     -----
     ne_data (astropy table): table containing profile information about
-        gas denisty
-    tspec_data (astropy table): table containg profile information about
+        gas density
+    tspec_data (astropy table): table containing profile information about
         temperature
     nemodel (dictionary): info about ne profile fit including param values
         and errors
     mcmc_results (dictionary): values and errors of free-params of MCMC as
-        well as quantites calculated from the posterior MCMC distribution
-
+        well as quantities calculated from the posterior MCMC distribution
 
 
     Results:

@@ -140,11 +140,11 @@ def fitne(ne_data, nemodeltype, tspec_data=None):
         nemodel['dof']: degrees of freedom
         nemodel['rchisq']: reduced chi-squared of fit
         nemodel['nefit']: ne model values at radial values matching
-          tspec_data (the observed temperature profiel)
+          tspec_data (the observed temperature profile)
 
     References:
     -----------
-    Python-sherpa:    https://github.com/sherpa/
+    python sherpa:    https://github.com/sherpa/
     '''
 
     # remove any existing models and data

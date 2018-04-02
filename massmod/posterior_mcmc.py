@@ -35,9 +35,9 @@ def calc_rdelta_p(row, nemodel, clustermeta):
     Returns:
     --------
     rdelta: radius corresponding to overdensity
-    mdelta: total mass wihin rdelta
+    mdelta: total mass within rdelta
     mdm: dark matter mass within rdelta
-    mstars: stellar mass of central galaxy wihtn rdelta
+    mstars: stellar mass of central galaxy within rdelta
     mgas: gas mass within rdelta
 
     '''
@@ -104,7 +104,7 @@ def calc_posterior_mcmc(samples, nemodel, clustermeta, Ncores=params.Ncores):
     '''
     Calculate the radius corresponding to the given overdensity i.e. the radius
      corresponding to a mean overdensity that is some factor times the critical
-     densiy at the redshift of the clustermeta. Within this radius, calculate
+     density at the redshift of the clustermeta. Within this radius, calculate
      the total mass, DM mass, stellar mass, gas mass.
 
 

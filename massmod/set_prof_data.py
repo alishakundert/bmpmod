@@ -69,8 +69,8 @@ def set_tspec(radius,
 
     Returns:
     --------
-    tspec_data (astropy table): table containing temperature profile information
-        with the required format for bmpmod
+    tspec_data (astropy table): table containing temperature profile
+        information with the required format for bmpmod
     '''
 
     tspec_data = atpy.Table()

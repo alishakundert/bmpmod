@@ -21,9 +21,10 @@ def nfw_mass_model(r, c, rs, z):
     Args:
     -----
     r (float or array) [kpc]: array of radius values
-    c (float) [unitless]: mass concenration
-    rs (float) [kpc]: scale radius
 
+    c (float) [unitless]: mass concentration
+    rs (float) [kpc]: scale radius
+    z (float): redshift of cluster
 
     Returns:
     --------
@@ -101,7 +102,7 @@ def gas_mass_model(x, nemodel):
 
     '''
     Calculates the ICM gas mass within some radius (or radii) by integrating
-        the gas denisty profile:
+        the gas density profile:
             Mgas = \int 4*pi*r^2 rho_gas dr
 
     Args:
