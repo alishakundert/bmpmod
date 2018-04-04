@@ -17,7 +17,7 @@ The cluster mass model represents the sum of all mass contributions: Mtot(r) = M
 
 Full details of this mass profile modeling method as implemented here in bmpmod will be available soon in Kundert et al. 2018, in prep.
 
-To see an example of this code, check out [./example.ipynb](./example.ipynb)!
+To see an example of this code, check out [example.ipynb](./example.ipynb)!
 
 
 
