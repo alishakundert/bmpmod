@@ -44,8 +44,8 @@ git clone https://github.com/alishakundert/massmod.git
 
 * Have X-ray data? 
 
-    Use a [template](./template.py) to read in your deprojected gas density and temperature profiles.
-    *In development*
+    *In development*: Use a [template](./template.py) to read in your deprojected gas density and temperature profiles.
+    
     
 * No X-ray data? 
 
