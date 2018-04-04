@@ -1,6 +1,6 @@
 # bmpmod
 
-**A backwards mass profile modeler (bmpmod) for galaxy clusters.**
+**A backwards mass profile modeler (bmpmod) for galaxy groups and clusters.**
 
 bmpmod is a python package designed to determine the total mass profile of a galaxy cluster via a MCMC fit of input radial profiles of the intracluster medium gas density and temperature.
 
