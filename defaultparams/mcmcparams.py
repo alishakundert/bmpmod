@@ -9,7 +9,7 @@ normsersic_guess = 10.
 c_boundmin = 1.
 c_boundmax = 20.
 rs_boundmin = 10.
-rs_boundmax = 500.
+rs_boundmax = 1000.
 normsersic_boundmin = 0.01
 normsersic_boundmax = 100.
 

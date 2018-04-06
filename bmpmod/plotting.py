@@ -187,7 +187,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     plt.xlabel('r [kpc]')
     plt.ylabel('$n_{e}$ [cm$^{-3}$]')
 
-    plt_densityprof(nemodel, annotations=1)
+    plt_densityprof(nemodel=nemodel, ne_data=ne_data, annotations=1)
 
     '''
     final kT profile with c, rs
@@ -372,7 +372,7 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
 #############################################################################
 
 
-def plt_densityprof(nemodel, annotations=0):
+def plt_densityprof(nemodel, ne_data, annotations=0):
 
     '''
     Helper function to plot the input gas density profile model.
@@ -391,7 +391,7 @@ def plt_densityprof(nemodel, annotations=0):
     '''
 
     # add model to plot
-    rplot = np.linspace(0, 1000., 1000)
+    rplot = np.linspace(1., max(ne_data['radius']), 1000)
 
     if nemodel['type'] == 'double_beta':
 
@@ -611,7 +611,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     plt.xlabel('r [kpc]')
     plt.ylabel('$n_{e}$ [cm$^{-3}$]')
 
-    plt_densityprof(nemodel, annotations=0)
+    plt_densityprof(nemodel=nemodel, ne_data=ne_data, annotations=0)
 
     '''
     final kT profile with c, rs

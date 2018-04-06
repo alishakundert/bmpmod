@@ -74,7 +74,9 @@ def find_nemodeltype(ne_data, tspec_data, optplt=0):
                 ax3.set_yscale("log", nonposy='clip')
 
             # best-fitting density model
-            plotting.plt_densityprof(nemodel, annotations=1)
+            plotting.plt_densityprof(nemodel=nemodel, 
+                                     ne_data=ne_data, 
+                                     annotations=1)
 
             # data
             plt.errorbar(ne_data['radius'], ne_data['ne'],
