@@ -232,7 +232,11 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
                  + str(int(tspec_data['radius'][clustermeta['refindex']]))
                  + ' kpc', (0.05, 0.9), xycoords='axes fraction')
 
-    # plt.xlim(xmin=1)
+    xmin,xmax=plt.xlim()
+    if xmin<1:
+        plt.xlim(xmin=1)
+    ymin,ymax=plt.ylim()
+    plt.ylim(np.floor(ymin),np.ceil(ymax))
 
     plt.semilogx(tspec_data['radius'], np.array(tfit_arr), 'r-')
 
@@ -337,20 +341,6 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
         + '} \ M_{\odot}$',
         (0.55, 0.15), xycoords='figure fraction')
 
-    if clustermeta['incl_mstar'] == 1:
-        plt.annotate(
-            '$M_{\star}(R_{'+str(int(cosmo.overdensity))+'})='
-            + str(np.round(seplog(mcmc_results['mstars'][0])[0], 2))
-            + '_{-'
-            + str(np.round(mcmc_results['mstars'][2]
-                           * 10**-seplog(mcmc_results['mstars'][0])[1], 2))
-            + '}^{+'
-            + str(np.round(mcmc_results['mstars'][1]
-                           * 10**-seplog(mcmc_results['mstars'][0])[1], 2))
-            + '} \ 10^{'+str(seplog(mcmc_results['mstars'][0])[1])
-            + '} \ M_{\odot}$',
-            (0.55, 0.1), xycoords='figure fraction')
-
     if clustermeta['incl_mgas'] == 1:
         plt.annotate(
             '$M_{gas}(R_{'+str(int(cosmo.overdensity))+'})='
@@ -362,6 +352,20 @@ def plt_summary(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
             + str(np.round(mcmc_results['mgas'][1]
                            * 10**-seplog(mcmc_results['mgas'][0])[1], 2))
             + '} \ 10^{'+str(seplog(mcmc_results['mgas'][0])[1])
+            + '} \ M_{\odot}$',
+            (0.55, 0.10), xycoords='figure fraction')
+
+    if clustermeta['incl_mstar'] == 1:
+        plt.annotate(
+            '$M_{\star}(R_{'+str(int(cosmo.overdensity))+'})='
+            + str(np.round(seplog(mcmc_results['mstars'][0])[0], 2))
+            + '_{-'
+            + str(np.round(mcmc_results['mstars'][2]
+                           * 10**-seplog(mcmc_results['mstars'][0])[1], 2))
+            + '}^{+'
+            + str(np.round(mcmc_results['mstars'][1]
+                           * 10**-seplog(mcmc_results['mstars'][0])[1], 2))
+            + '} \ 10^{'+str(seplog(mcmc_results['mstars'][0])[1])
             + '} \ M_{\odot}$',
             (0.55, 0.05), xycoords='figure fraction')
 
@@ -593,7 +597,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     '''
     gas density
     '''
-    ax = fig4.add_subplot(1, 3, 1)
+    ax1 = fig4.add_subplot(1, 3, 1)
 
     plt.loglog(ne_data['radius'], ne_data['ne'], 'o', color='#707070',
                markersize=2)
@@ -605,8 +609,8 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
                  linestyle='none', color='#707070')
 
     plt.xlim(xmin=1)
-    ax.set_xscale("log", nonposx='clip')
-    ax.set_yscale("log", nonposy='clip')
+    ax1.set_xscale("log", nonposx='clip')
+    ax1.set_yscale("log", nonposy='clip')
 
     plt.xlabel('r [kpc]')
     plt.ylabel('$n_{e}$ [cm$^{-3}$]')
@@ -637,7 +641,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
                 c=mcmc_results['c'][0],
                 rs=mcmc_results['rs'][0])
 
-    ax = fig4.add_subplot(1, 3, 2)
+    ax2 = fig4.add_subplot(1, 3, 2)
 
     plt.semilogx(tspec_data['radius'], tspec_data['tspec'], 'bo')
 
@@ -662,7 +666,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     OVERDENSITY RADIUS: MASS PROFILE
     '''
 
-    ax = fig4.add_subplot(1, 3, 3)
+    ax3 = fig4.add_subplot(1, 3, 3)
 
     xplot = np.logspace(np.log10(1.), np.log10(900.), 100)
 
@@ -690,7 +694,7 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     if clustermeta['incl_mgas'] == 1:
         plt.loglog(xplot, mass_gas, 'y-', label='M$_{\mathrm{gas}}$')
 
-    handles, labels = ax.get_legend_handles_labels()
+    handles, labels = ax3.get_legend_handles_labels()
     plt.legend(handles, labels, loc=2)
 
     plt.xlim(xmin=2)
@@ -699,4 +703,4 @@ def plt_summary_nice(ne_data, tspec_data, nemodel, mcmc_results, clustermeta):
     plt.xlabel('r [kpc]')
     plt.ylabel('mass [$M_{\odot}$]')
 
-    return fig4
+    return fig4, ax1
